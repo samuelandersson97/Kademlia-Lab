@@ -6,6 +6,6 @@ Lab in D7024E
 
 # Backlog
 
-| Part  |      Description    | Type                                       |  Issues      |
-| ----------- | ------- |------------------------------------------------|----------------|
-| Test  | Test | Test  | Test
+| Part  |      Description    | Type                                       |  Issues      | Status  |
+| ----------- | ------- |------------------------------------------------|----------------|---------|
+| Test  | Test | Test  | Test | Test|
