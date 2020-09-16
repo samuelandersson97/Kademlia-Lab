@@ -16,8 +16,9 @@ func scanInput() {
 func handleInput(s []string) {
 	operation := s[0]
 	if operation == "ping"{
-		testContact := NewContact(util.NewRandomKademliaID(), "127.0.0.1")
+		testContact := NewContact(util.NewRandomKademliaID(), "10.0.1.22")
 		testNetwork := CreateNetwork(&testContact)
+		SendPingMessage(&testContact)
 	}
 	
 	if operation == "node"{
