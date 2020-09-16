@@ -22,3 +22,9 @@ func (network *Network) SendFindDataMessage(hash string) {
 func (network *Network) SendStoreMessage(data []byte) {
 	// TODO
 }
+
+func (network *Network) CreateNetwork(contact *Contact) *Network {
+	network := Network{}
+	network.contact = contact
+	return network
+}
