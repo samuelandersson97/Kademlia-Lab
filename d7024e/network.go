@@ -1,7 +1,12 @@
 package d7024e
 
 type Network struct {
+	contact *Contact
 }
+
+//type Network struct {
+//	rTable *RoutingTable
+//}
 
 func Listen(ip string, port int) {
 	// TODO
