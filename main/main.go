@@ -1,12 +1,15 @@
 package main
 
 import (
-	"fmt"
+	"d7024e"
 )
 
 func main() {
-	util.cliGreeting()
+	d7024e.CliGreeting()
 	for{
-		util.scanInput()
+		//d7024e.ScanInput()
+		var ping []string
+		ping = append(ping, "ping","boi")
+		d7024e.HandleInput(ping)
 	}
 }
