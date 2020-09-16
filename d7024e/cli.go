@@ -16,14 +16,16 @@ func scanInput() {
 func handleInput(s []string) {
 	operation := s[0]
 	if operation == "ping"{
-
+		testContact := NewContact(util.NewRandomKademliaID(), "10.0.1.22")
+		testNetwork := CreateNetwork(&testContact)
+		SendPingMessage(&testContact)
 	}
 	
-	else if operation == "node"{
+	if operation == "node"{
 		if s[1] == "lookup"{
 
 		}
-		else if s[1] == "join"{
+		if s[1] == "join"{
 
 		}
 		else{
@@ -31,19 +33,19 @@ func handleInput(s []string) {
 		}
 	}
 	
-	else if operation == "put"{
+	if operation == "put"{
 		
 	}
 	
-	else if operation == "get"{
+	if operation == "get"{
 		
 	}
 	
-	else if operation == "exit"{
+	if operation == "exit"{
 		os.Exit()
 	}
 	
-	else if operation == "help"{
+	if operation == "help"{
 		cmdString := "\n
 		Available commands:\n
 		\n
@@ -59,8 +61,8 @@ func handleInput(s []string) {
 func cliGreeting() {
 	greeting := "\n
 	##################################################
-	#		   WELCOME TO THE KADEMLIA CLI.			 #
-	#	PLEASE ENTER YOUR COMMANDS IN THE TERMINAL   #
+	#     WELCOME TO THE KADEMLIA CLI.               #
+	# PLEASE ENTER YOUR COMMANDS IN THE TERMINAL     #
 	# WRITE 'help' FOR A LIST OF AVAILABLE COMMANDS  #
 	##################################################
 	\n
