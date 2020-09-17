@@ -5,5 +5,8 @@ import (
 )
 
 func main() {
-	fmt.Println("Hello docker")
+	util.cliGreeting()
+	for{
+		util.scanInput()
+	}
 }
