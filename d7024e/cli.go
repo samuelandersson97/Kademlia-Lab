@@ -23,32 +23,21 @@ func HandleInput(s []string) {
 		testContact := NewContact(NewRandomKademliaID(), s[1])
 		testNetwork := InitNetwork(&testContact)
 		testNetwork.SendPingMessage(&testContact)
-	}
-	
-	if operation == "node"{
+	}else if operation == "node"{
 		if s[1] == "lookup"{
 
-		}
-		if s[1] == "join"{
+		}else if s[1] == "join"{
 
 		}else{
 			fmt.Println("Incorrect command!")
 		}
-	}
-	
-	if operation == "put"{
+	}else if operation == "put"{
 		
-	}
-	
-	if operation == "get"{
+	}else if operation == "get"{
 		
-	}
-	
-	if operation == "exit"{
+	}else if operation == "exit"{
 		os.Exit(0)
-	}
-	
-	if operation == "help"{
+	}else if operation == "help"{
 		cmdString := "\n Available commands:\n"
 		fmt.Println(cmdString)
 	}else{
