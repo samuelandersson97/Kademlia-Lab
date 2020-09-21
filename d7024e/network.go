@@ -15,18 +15,19 @@ type Network struct {
 func Listen(ip string, port int) {
 	adrPort := ip+":"+strconv.Itoa(port)
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
+	/*
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",adrPort)
 	if err != nil {
 		fmt.Println(err)
-	}
+	}*/
 	//Listens for packets on the (ONLY!!) LOCAL network. 'udp4' indicates that only IPv4-addresses are taken into account when it comes to listening for packets, returns a connection
-	c, err := net.ListenUDP("udp4", udpEndPoint)
+	c, err := net.ListenUDP("udp4", ":"+strconv.Itoa(port))
 	if err != nil {
 		fmt.Println(err)
 	}
-	//defer c.close()
+	defer c.Close()
 	//creates buffer with maximum length of 512
-	messageBuffer := make([]byte, 512)
+	messageBuffer := make([]byte, 8192)
 	for{
 		//Adds the message from the UDP-channel in the message-buffer. Returns the size of the message and the adress of the sender
 		size, senderAddress, err := c.ReadFromUDP(messageBuffer)
@@ -43,11 +44,12 @@ func Listen(ip string, port int) {
 }
 
 func (network *Network) SendPingMessage(contact *Contact) {
+	/*
 	go Listen(contact.Address, 80)
-	<- time.After(2*time.Second) //Kicks of a new thread and executes the Listen function on it for two seconds
+	<- time.After(2*time.Second) *///Kicks of a new thread and executes the Listen function on it for two seconds
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
 	fmt.Println("This is contact ip: " + contact.Address)
-	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":80")
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
 	if err != nil {
 		fmt.Println("pre---------")
 		fmt.Println(err)
@@ -59,13 +61,13 @@ func (network *Network) SendPingMessage(contact *Contact) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	//defer c.close()
+	defer c.Close()
 	message := []byte("Halloj")
 	_, e := c.Write(message)
 	if e != nil {
 		fmt.Println(err)
 	}
-	messageBuffer := make([]byte, 512)
+	messageBuffer := make([]byte, 8192)
 	size, senderAddress, err := c.ReadFromUDP(messageBuffer)
 	if err != nil {
 		fmt.Println(err)
@@ -85,7 +87,8 @@ func (network *Network) SendStoreMessage(data []byte) {
 	// TODO
 }
 
-func (network *Network) InitNetwork(contact *Contact)*Network{
+func InitNetwork(contact *Contact) *Network{
+	network := &Network{}
 	network.contact = contact
 	return network
 }
