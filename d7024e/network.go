@@ -3,7 +3,6 @@ package d7024e
 import(
 	"net"
 	"strconv"
-	"time"
 	"fmt"
 )
 
@@ -21,12 +20,12 @@ func Listen(ip string, port int) {
 		fmt.Println(err)
 	}*/
 	//Listens for packets on the (ONLY!!) LOCAL network. 'udp4' indicates that only IPv4-addresses are taken into account when it comes to listening for packets, returns a connection
-	c, err := net.ListenUDP("udp4", ":"+strconv.Itoa(port))
+	c, err := net.ListenPacket("udp4", ":"+strconv.Itoa(port))
 	if err != nil {
 		fmt.Println(err)
 	}
 	defer c.Close()
-	//creates buffer with maximum length of 512
+	//creates buffer with maximum length of 8192
 	messageBuffer := make([]byte, 8192)
 	for{
 		//Adds the message from the UDP-channel in the message-buffer. Returns the size of the message and the adress of the sender
