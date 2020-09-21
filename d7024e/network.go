@@ -43,13 +43,17 @@ func Listen(ip string, port int) {
 }
 
 func (network *Network) SendPingMessage(contact *Contact) {
-	go Listen(contact.Address, 1000)
+	go Listen(contact.Address, 80)
 	<- time.After(2*time.Second) //Kicks of a new thread and executes the Listen function on it for two seconds
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
-	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address)
+	fmt.Println("This is contact ip: " + contact.Address)
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":80")
 	if err != nil {
+		fmt.Println("pre---------")
 		fmt.Println(err)
+		fmt.Println("post--------")
 	}
+	fmt.Println("THIS ADDRESS ->>>>> "+udpEndPoint.String())
 	// Starts up a UDP-connection to the resolved UDP-address 
 	c, err := net.DialUDP("udp4",nil, udpEndPoint)
 	if err != nil {
