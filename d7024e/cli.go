@@ -18,7 +18,6 @@ func ScanInput() {
 }
 
 func HandleInput(s []string) {
-	var network Network
 	operation := s[0]
 	if operation == "ping"{
 		testContact := NewContact(NewRandomKademliaID(), s[1])

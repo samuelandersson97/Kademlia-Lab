@@ -13,14 +13,17 @@ type Network struct {
 
 func Listen(ip string, port int) {
 	adrPort := ip+":"+strconv.Itoa(port)
+	fmt.Println("Listening at "+adrPort+ ".....")
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",adrPort)
 	if err != nil {
+		fmt.Println("LISTEN ERROR: 1")
 		fmt.Println(err)
 	}
 	//Listens for packets on the (ONLY!!) LOCAL network. 'udp4' indicates that only IPv4-addresses are taken into account when it comes to listening for packets, returns a connection
-	c, err := net.ListenUDP("udp4", ":"+strconv.Itoa(port))
+	c, err := net.ListenUDP("udp4", udpEndPoint)
 	if err != nil {
+		fmt.Println("LISTEN ERROR: 2")
 		fmt.Println(err)
 	}
 	defer c.Close()
@@ -30,12 +33,14 @@ func Listen(ip string, port int) {
 		//Adds the message from the UDP-channel in the message-buffer. Returns the size of the message and the adress of the sender
 		size, senderAddress, err := c.ReadFromUDP(messageBuffer)
 		if err != nil {
+			fmt.Println("LISTEN ERROR: 3")
 			fmt.Println(err)
 		}
 		fmt.Println("This was sent from "+ senderAddress.String() +": "+string(messageBuffer[0:size-1])+"\n")
 		response := []byte("This is "+adrPort+"'s response: JAARRÅ\n")
 		_, e := c.WriteToUDP(response, senderAddress)
 		if e != nil {
+			fmt.Println("LISTEN ERROR: 4")
 			fmt.Println(e)
 		}
 	}
@@ -49,25 +54,27 @@ func (network *Network) SendPingMessage(contact *Contact) {
 	fmt.Println("This is contact ip: " + contact.Address)
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
 	if err != nil {
-		fmt.Println("pre---------")
+		fmt.Println("SEND ERROR: 1")
 		fmt.Println(err)
-		fmt.Println("post--------")
 	}
 	fmt.Println("THIS ADDRESS ->>>>> "+udpEndPoint.String())
 	// Starts up a UDP-connection to the resolved UDP-address 
 	c, err := net.DialUDP("udp4",nil, udpEndPoint)
 	if err != nil {
+		fmt.Println("SEND ERROR: 2")
 		fmt.Println(err)
 	}
 	defer c.Close()
 	message := []byte("Halloj")
 	_, e := c.Write(message)
 	if e != nil {
+		fmt.Println("SEND ERROR: 3")
 		fmt.Println(err)
 	}
 	messageBuffer := make([]byte, 8192)
 	size, senderAddress, err := c.ReadFromUDP(messageBuffer)
 	if err != nil {
+		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
 	}
 	fmt.Println("This was sent from "+ senderAddress.String() +": "+string(messageBuffer[0:size-1])+"\n")
