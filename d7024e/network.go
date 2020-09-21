@@ -19,7 +19,7 @@ func Listen(ip string, port int) {
 		fmt.Println(err)
 	}
 	//Listens for packets on the (ONLY!!) LOCAL network. 'udp4' indicates that only IPv4-addresses are taken into account when it comes to listening for packets, returns a connection
-	c, err := net.ListenUDP("udp4", ":"+strconv.Itoa(port))
+	c, err := net.ListenUDP("udp4", udpEndPoint)
 	if err != nil {
 		fmt.Println(err)
 	}
