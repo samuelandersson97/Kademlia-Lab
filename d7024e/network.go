@@ -14,13 +14,12 @@ type Network struct {
 func Listen(ip string, port int) {
 	adrPort := ip+":"+strconv.Itoa(port)
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
-	/*
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",adrPort)
 	if err != nil {
 		fmt.Println(err)
-	}*/
+	}
 	//Listens for packets on the (ONLY!!) LOCAL network. 'udp4' indicates that only IPv4-addresses are taken into account when it comes to listening for packets, returns a connection
-	c, err := net.ListenPacket("udp4", ":"+strconv.Itoa(port))
+	c, err := net.ListenUDP("udp4", ":"+strconv.Itoa(port))
 	if err != nil {
 		fmt.Println(err)
 	}
