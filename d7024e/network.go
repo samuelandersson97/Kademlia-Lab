@@ -37,7 +37,7 @@ func Listen(ip string, port int) {
 			fmt.Println(err)
 		}
 		fmt.Println("This was sent from "+ senderAddress.String() +": "+string(messageBuffer[0:size-1])+"\n")
-		response := []byte("This is "+adrPort+"'s response: JAARRÅ\n")
+		response := []byte("Det är klart att jag kan!")
 		_, e := c.WriteToUDP(response, senderAddress)
 		if e != nil {
 			fmt.Println("LISTEN ERROR: 4")
@@ -65,7 +65,7 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Println(err)
 	}
 	defer c.Close()
-	message := []byte("Halloj")
+	message := []byte("Halloj! Kan du snälla besvara mig?")
 	_, e := c.Write(message)
 	if e != nil {
 		fmt.Println("SEND ERROR: 3")
@@ -77,7 +77,7 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
 	}
-	fmt.Println("This was sent from "+ senderAddress.String() +": "+string(messageBuffer[0:size-1])+"\n")
+	fmt.Println("RESPONSE: "+ senderAddress.String() +": "+string(messageBuffer[0:size-1])+"\n")
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
