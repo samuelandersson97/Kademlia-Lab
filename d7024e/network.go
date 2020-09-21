@@ -47,9 +47,6 @@ func Listen(ip string, port int) {
 }
 
 func (network *Network) SendPingMessage(contact *Contact) {
-	/*
-	go Listen(contact.Address, 80)
-	<- time.After(2*time.Second) *///Kicks of a new thread and executes the Listen function on it for two seconds
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
 	fmt.Println("This is contact ip: " + contact.Address)
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
@@ -57,7 +54,6 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Println("SEND ERROR: 1")
 		fmt.Println(err)
 	}
-	fmt.Println("THIS ADDRESS ->>>>> "+udpEndPoint.String())
 	// Starts up a UDP-connection to the resolved UDP-address 
 	c, err := net.DialUDP("udp4",nil, udpEndPoint)
 	if err != nil {
@@ -96,4 +92,15 @@ func InitNetwork(contact *Contact) *Network{
 	network := &Network{}
 	network.contact = contact
 	return network
+}
+
+//Gets the nodes local IP by dialing Google's server and returns the IP as a string
+func GetOutboundIP() string {
+    conn, err := net.Dial("udp", "8.8.8.8:80")
+    if err != nil {
+        fmt.Println(err)
+    }
+    defer conn.Close()
+    localAddr := conn.LocalAddr().(*net.UDPAddr)
+    return localAddr.IP.String()
 }
