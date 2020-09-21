@@ -22,7 +22,7 @@ func HandleInput(s []string) {
 	operation := s[0]
 	if operation == "ping"{
 		testContact := NewContact(NewRandomKademliaID(), s[1])
-		testNetwork := network.InitNetwork(&testContact)
+		testNetwork := InitNetwork(&testContact)
 		testNetwork.SendPingMessage(&testContact)
 	}
 	
