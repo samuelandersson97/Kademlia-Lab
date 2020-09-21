@@ -7,18 +7,23 @@ import (
 	"strings"
 )
 
-func scanInput() {
+func ScanInput() {
 	reader := bufio.NewReader(os.Stdin)
-	input := strings.Split(reader.ReadString('\n'), " ")
-	handleInput(input)
+	readValue, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Println(err)
+	}
+	input := strings.Split(readValue, " ")
+	HandleInput(input)
 }
 
-func handleInput(s []string) {
+func HandleInput(s []string) {
+	var network Network
 	operation := s[0]
 	if operation == "ping"{
-		testContact := NewContact(util.NewRandomKademliaID(), "10.0.1.22")
-		testNetwork := CreateNetwork(&testContact)
-		SendPingMessage(&testContact)
+		testContact := NewContact(NewRandomKademliaID(), s[1])
+		testNetwork := network.InitNetwork(&testContact)
+		testNetwork.SendPingMessage(&testContact)
 	}
 	
 	if operation == "node"{
@@ -27,8 +32,7 @@ func handleInput(s []string) {
 		}
 		if s[1] == "join"{
 
-		}
-		else{
+		}else{
 			fmt.Println("Incorrect command!")
 		}
 	}
@@ -42,31 +46,19 @@ func handleInput(s []string) {
 	}
 	
 	if operation == "exit"{
-		os.Exit()
+		os.Exit(0)
 	}
 	
 	if operation == "help"{
-		cmdString := "\n
-		Available commands:\n
-		\n
-		"
+		cmdString := "\n Available commands:\n"
 		fmt.Println(cmdString)
-	}
-	
-	else{
+	}else{
 		fmt.Println("Incorrect command!")
 	}
 }
 
-func cliGreeting() {
-	greeting := "\n
-	##################################################
-	#     WELCOME TO THE KADEMLIA CLI.               #
-	# PLEASE ENTER YOUR COMMANDS IN THE TERMINAL     #
-	# WRITE 'help' FOR A LIST OF AVAILABLE COMMANDS  #
-	##################################################
-	\n
-	"
+func CliGreeting() {
+	greeting := "WELCOME TO THE KADEMLIA CLI.\n"
 	fmt.Println(greeting)
 }
 
