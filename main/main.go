@@ -2,10 +2,24 @@ package main
 
 import (
 	"d7024e"
+	"net"
+	"fmt"
+	"strings"
 )
 
+func GetOutboundIP() String {
+    conn, err := net.Dial("udp", "8.8.8.8:80")
+    if err != nil {
+        fmt.Println(err)
+    }
+    defer conn.Close()
+    localAddr := conn.LocalAddr().(*net.UDPAddr)
+    return localAddr.IP.String()
+}
+
 func main() {
-	d7024e.Listen("127.0.0.1", 1111)
+	myIP := GetOutboundIP()
+	go d7024e.Listen(myIP, 1111)
 	d7024e.CliGreeting()
 	for{
 		d7024e.ScanInput()
