@@ -9,7 +9,7 @@ import(
 type Network struct {
 	//Testing for ping only, should be more than one contact
 	contact *Contact
-	// Routing table
+	// Routing table, not contact
 }
 
 func Listen(ip string, port int) {
