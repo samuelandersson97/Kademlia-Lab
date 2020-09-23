@@ -4,6 +4,11 @@ import (
 	"d7024e"
 )
 
+/*
+	Create a new instance of the kademlia struct.
+	Needs a routing table and the 'me contact'
+*/
+
 func main() {
 	myIP := d7024e.GetOutboundIP()
 	go d7024e.Listen(myIP, 1111)
