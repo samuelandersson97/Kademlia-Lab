@@ -10,7 +10,7 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 	closestContacts := routingTable.FindClosestContacts(target.ID, 5) // 5 should be the size of the bucket or alpha? 
 
 	// TODO
-	//	1. Async calls (Alpha decides how many) to search for the contact in the network.
+	//	1. Async calls (Alpha decides how many) to search for the contact in the network (Using sendFindContactMessage).
 	//	2. Check if the contact was found.
 	//	3. Iterate with the response from the search in step 1. 
 }
