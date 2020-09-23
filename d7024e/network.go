@@ -6,11 +6,28 @@ import(
 	"fmt"
 )
 
+/*
+	Here we should have a pointer to a Kademlia "object". The Kademlia object itself contains a RoutingTable.
+*/
+
 type Network struct {
 	//Testing for ping only, should be more than one contact
 	contact *Contact
 	// Routing table
 }
+
+/*
+	We should also add a "RPC-struct" that contains the structure of a 'message'/packet that should be sent between the nodes.
+	This struct could then be encoded to a JSON-objcect before being transmitted by an UDP-link.
+	*NAME/MESSAGE
+	*ADDRESS
+	*ID
+	*DATA
+*/
+
+/*
+	Extract the sent message and create different fucntions that handles different types of messages (PING, FIND_NODE, etc...)
+*/
 
 func Listen(ip string, port int) {
 	adrPort := ip+":"+strconv.Itoa(port)
@@ -47,6 +64,10 @@ func Listen(ip string, port int) {
 	}
 }
 
+/*
+	Clean up the trace prints, send useful messages instead of this (should be wrapped in our struct mentioned above)
+*/
+
 func (network *Network) SendPingMessage(contact *Contact) {
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
 	fmt.Println("This is contact ip: " + contact.Address)
@@ -79,7 +100,9 @@ func (network *Network) SendPingMessage(contact *Contact) {
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
 	// TODO
-	
+	/*
+		Create a message and send it to the contact. The message should be of the name "NODE_LOOKUP" and should return the k closest contacts
+	*/
 }
 
 func (network *Network) SendFindDataMessage(hash string) {
@@ -89,6 +112,10 @@ func (network *Network) SendFindDataMessage(hash string) {
 func (network *Network) SendStoreMessage(data []byte) {
 	// TODO
 }
+
+/*
+	Change the InitNetwork to the newly defined struct. Remove contact and add routingtable
+*/
 
 func InitNetwork(contact *Contact) *Network{
 	network := &Network{}

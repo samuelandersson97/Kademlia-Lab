@@ -7,6 +7,10 @@ import (
 	"strings"
 )
 
+/*
+	Should be complete
+*/
+
 func ScanInput() {
 	reader := bufio.NewReader(os.Stdin)
 	readValue, err := reader.ReadString('\n')
@@ -16,6 +20,13 @@ func ScanInput() {
 	input := strings.Split(readValue, " ")
 	HandleInput(input)
 }
+
+/*
+	Should add support for 'node lookup', 'node join', 'put' and 'get' when we are finished creating the support for these operations.
+
+	Note that the 'ping' operation should be changed since we are creating networks and contacts there as it stands just to test the operation.
+
+*/
 
 func HandleInput(s []string) {
 	operation := s[0]
