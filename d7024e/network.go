@@ -9,6 +9,7 @@ import(
 type Network struct {
 	//Testing for ping only, should be more than one contact
 	contact *Contact
+	// Routing table
 }
 
 func Listen(ip string, port int) {
@@ -78,6 +79,7 @@ func (network *Network) SendPingMessage(contact *Contact) {
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
 	// TODO
+	
 }
 
 func (network *Network) SendFindDataMessage(hash string) {
