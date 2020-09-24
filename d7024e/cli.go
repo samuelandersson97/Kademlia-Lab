@@ -7,66 +7,57 @@ import (
 	"strings"
 )
 
-func scanInput() {
+/*
+	Should be complete
+*/
+
+func ScanInput() {
 	reader := bufio.NewReader(os.Stdin)
-	input := strings.Split(reader.ReadString('\n'), " ")
-	handleInput(input)
+	readValue, err := reader.ReadString('\n')
+	if err != nil {
+		fmt.Println(err)
+	}
+	input := strings.Split(readValue, " ")
+	HandleInput(input)
 }
 
-func handleInput(s []string) {
+/*
+	Should add support for 'node lookup', 'node join', 'put' and 'get' when we are finished creating the support for these operations.
+
+	Note that the 'ping' operation should be changed since we are creating networks and contacts there as it stands just to test the operation.
+
+*/
+
+func HandleInput(s []string) {
 	operation := s[0]
 	if operation == "ping"{
-		testContact := NewContact(util.NewRandomKademliaID(), "10.0.1.22")
-		testNetwork := CreateNetwork(&testContact)
-		SendPingMessage(&testContact)
-	}
-	
-	if operation == "node"{
+		testContact := NewContact(NewRandomKademliaID(), s[1])
+		testNetwork := InitNetwork(&testContact)
+		testNetwork.SendPingMessage(&testContact)
+	}else if operation == "node"{
 		if s[1] == "lookup"{
 
-		}
-		if s[1] == "join"{
+		}else if s[1] == "join"{
 
-		}
-		else{
+		}else{
 			fmt.Println("Incorrect command!")
 		}
-	}
-	
-	if operation == "put"{
+	}else if operation == "put"{
 		
-	}
-	
-	if operation == "get"{
+	}else if operation == "get"{
 		
-	}
-	
-	if operation == "exit"{
-		os.Exit()
-	}
-	
-	if operation == "help"{
-		cmdString := "\n
-		Available commands:\n
-		\n
-		"
+	}else if operation == "exit"{
+		os.Exit(0)
+	}else if operation == "help"{
+		cmdString := "\n Available commands:\n"
 		fmt.Println(cmdString)
-	}
-	
-	else{
+	}else{
 		fmt.Println("Incorrect command!")
 	}
 }
 
-func cliGreeting() {
-	greeting := "\n
-	##################################################
-	#     WELCOME TO THE KADEMLIA CLI.               #
-	# PLEASE ENTER YOUR COMMANDS IN THE TERMINAL     #
-	# WRITE 'help' FOR A LIST OF AVAILABLE COMMANDS  #
-	##################################################
-	\n
-	"
+func CliGreeting() {
+	greeting := "WELCOME TO THE KADEMLIA CLI.\n"
 	fmt.Println(greeting)
 }
 

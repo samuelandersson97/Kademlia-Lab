@@ -1,12 +1,19 @@
 package main
 
 import (
-	"fmt"
+	"d7024e"
 )
 
+/*
+	Create a new instance of the kademlia struct.
+	Needs a routing table and the 'me contact'
+*/
+
 func main() {
-	util.cliGreeting()
+	myIP := d7024e.GetOutboundIP()
+	go d7024e.Listen(myIP, 1111)
+	d7024e.CliGreeting()
 	for{
-		util.scanInput()
+		d7024e.ScanInput()
 	}
 }

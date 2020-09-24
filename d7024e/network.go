@@ -4,72 +4,109 @@ import(
 	"net"
 	"strconv"
 	"time"
+	"fmt"
 )
+
+/*
+	Here we should have a pointer to a Kademlia "object". The Kademlia object itself contains a RoutingTable.
+*/
 
 type Network struct {
 	//Testing for ping only, should be more than one contact
 	contact *Contact
+	// Routing table, not contact
 }
 
 //type Network struct {
 //	rTable *RoutingTable
 //}
+/*
+	We should also add a "RPC-struct" that contains the structure of a 'message'/packet that should be sent between the nodes.
+	This struct could then be encoded to a JSON-objcect before being transmitted by an UDP-link.
+	*NAME/MESSAGE
+	*ADDRESS
+	*ID
+	*DATA
+*/
+
+/*
+	Extract the sent message and create different fucntions that handles different types of messages (PING, FIND_NODE, etc...)
+*/
 
 func Listen(ip string, port int) {
-	adrPort := ip+":"+port
+	adrPort := ip+":"+strconv.Itoa(port)
+	fmt.Println("Listening at "+adrPort+ ".....")
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",adrPort)
 	if err != nil {
+		fmt.Println("LISTEN ERROR: 1")
 		fmt.Println(err)
 	}
 	//Listens for packets on the (ONLY!!) LOCAL network. 'udp4' indicates that only IPv4-addresses are taken into account when it comes to listening for packets, returns a connection
 	c, err := net.ListenUDP("udp4", udpEndPoint)
 	if err != nil {
+		fmt.Println("LISTEN ERROR: 2")
 		fmt.Println(err)
 	}
-	defer c.close()
-	//creates buffer with maximum length of 512
-	messageBuffer := make([]byte, 512)
+	defer c.Close()
+	//creates buffer with maximum length of 8192
+	messageBuffer := make([]byte, 8192)
 	for{
 		//Adds the message from the UDP-channel in the message-buffer. Returns the size of the message and the adress of the sender
-		size, senderAddress, err = c.ReadFromUDP(messageBuffer)
-		fmt.Println("This was sent from "+ senderAddress.String() +": "+string(messageBuffer[0:size-1])+"\n")
-		response = []byte("This is "+adrPort+"'s response: JAARRÅ\n")
-		_, err = c.WriteToUPD(response, senderAddress)
+		size, senderAddress, err := c.ReadFromUDP(messageBuffer)
 		if err != nil {
+			fmt.Println("LISTEN ERROR: 3")
 			fmt.Println(err)
+		}
+		fmt.Println("This was sent from "+ senderAddress.String() +": "+string(messageBuffer[0:size-1])+"\n")
+		response := []byte("Det är klart att jag kan!")
+		_, e := c.WriteToUDP(response, senderAddress)
+		if e != nil {
+			fmt.Println("LISTEN ERROR: 4")
+			fmt.Println(e)
 		}
 	}
 }
 
+/*
+	Clean up the trace prints, send useful messages instead of this (should be wrapped in our struct mentioned above)
+*/
+
 func (network *Network) SendPingMessage(contact *Contact) {
-	go Listen(contact.Address, 1000) <- time.After(2*time.Second) //Kicks of a new thread and executes the Listen function on it for two seconds
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
-	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address)
+	fmt.Println("This is contact ip: " + contact.Address)
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
 	if err != nil {
+		fmt.Println("SEND ERROR: 1")
 		fmt.Println(err)
 	}
 	// Starts up a UDP-connection to the resolved UDP-address 
-	c, err := net.DialUDP("udp4", udpEndPoint)
+	c, err := net.DialUDP("udp4",nil, udpEndPoint)
 	if err != nil {
+		fmt.Println("SEND ERROR: 2")
 		fmt.Println(err)
 	}
-	defer c.close()
-	message = byte[]("Halloj")
-	_, err = c.Write(message)
-	if err != nil {
+	defer c.Close()
+	message := []byte("Halloj! Kan du snälla besvara mig?")
+	_, e := c.Write(message)
+	if e != nil {
+		fmt.Println("SEND ERROR: 3")
 		fmt.Println(err)
 	}
-	messageBuffer := make([]byte, 512)
+	messageBuffer := make([]byte, 8192)
 	size, senderAddress, err := c.ReadFromUDP(messageBuffer)
 	if err != nil {
+		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
 	}
-	fmt.Println("This was sent from "+ senderAddress.String() +": "+string(messageBuffer[0:size-1])+"\n"()
+	fmt.Println("RESPONSE: "+ senderAddress.String() +": "+string(messageBuffer[0:size-1])+"\n")
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
 	// TODO
+	/*
+		Create a message and send it to the contact. The message should be of the name "NODE_LOOKUP" and should return the k closest contacts
+	*/
 }
 
 func (network *Network) SendFindDataMessage(hash string) {
@@ -84,4 +121,24 @@ func (network *Network) CreateNetwork(contact *Contact) *Network {
 	network := Network{}
 	network.contact = contact
 	return network
+}
+/*
+	Change the InitNetwork to the newly defined struct. Remove contact and add routingtable
+*/
+
+func InitNetwork(contact *Contact) *Network{
+	network := &Network{}
+	network.contact = contact
+	return network
+}
+
+//Gets the nodes local IP by dialing Google's server and returns the IP as a string
+func GetOutboundIP() string {
+    conn, err := net.Dial("udp", "8.8.8.8:80")
+    if err != nil {
+        fmt.Println(err)
+    }
+    defer conn.Close()
+    localAddr := conn.LocalAddr().(*net.UDPAddr)
+    return localAddr.IP.String()
 }
