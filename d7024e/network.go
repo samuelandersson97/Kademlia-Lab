@@ -117,6 +117,12 @@ func (network *Network) SendStoreMessage(data []byte) {
 	// TODO
 }
 
+func DecodeProtocol(recievedByte []byte) Packet {
+	recievedPacket := Packet{}
+	json.Unmarshal(recievedByte, &recievedPacket)
+	return recievedPacket
+}
+
 func (network *Network) CreateNetwork(contact *Contact) *Network {
 	network := Network{}
 	network.contact = contact
@@ -142,3 +148,4 @@ func GetOutboundIP() string {
     localAddr := conn.LocalAddr().(*net.UDPAddr)
     return localAddr.IP.String()
 }
+
