@@ -4,6 +4,7 @@ import(
 	"net"
 	"strconv"
 	"fmt"
+	"encoding/json"
 )
 
 /*
@@ -14,16 +15,16 @@ type Network struct {
 	//Testing for ping only, should be more than one contact
 	contact *Contact
 	// Routing table, not contact
+
 }
 
-/*
-	We should also add a "RPC-struct" that contains the structure of a 'message'/packet that should be sent between the nodes.
-	This struct could then be encoded to a JSON-objcect before being transmitted by an UDP-link.
-	*NAME/MESSAGE
-	*ADDRESS
-	*ID
-	*DATA
-*/
+type Protocol struct {
+	rpc string,
+	contacts []*Contact,
+	hash string,
+	data []byte,
+	message string
+}
 
 /*
 	Extract the sent message and create different fucntions that handles different types of messages (PING, FIND_NODE, etc...)
@@ -70,7 +71,6 @@ func Listen(ip string, port int) {
 
 func (network *Network) SendPingMessage(contact *Contact) {
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
-	fmt.Println("This is contact ip: " + contact.Address)
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
 	if err != nil {
 		fmt.Println("SEND ERROR: 1")
@@ -82,20 +82,42 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Println("SEND ERROR: 2")
 		fmt.Println(err)
 	}
+	pingMessage := CreatePingProtocol("PING", nil, nil, nil, "PING_SENT")
 	defer c.Close()
-	message := []byte("Halloj! Kan du snälla besvara mig?")
-	_, e := c.Write(message)
+	_, e := c.Write(pingMessage)
 	if e != nil {
 		fmt.Println("SEND ERROR: 3")
 		fmt.Println(err)
 	}
-	messageBuffer := make([]byte, 8192)
-	size, senderAddress, err := c.ReadFromUDP(messageBuffer)
+	responseBuffer := make([]byte, 8192)
+	receivedPing := Protocol{}
+	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
 	if err != nil {
 		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
+	}else{
+		json.Unmarshal(responseBuffer[0:size-1], &responseBuffer)
+		fmt.Println(responseBuffer)
+		fmt.Println("RESPONSE: "+ responseBuffer.message+"\n")
 	}
-	fmt.Println("RESPONSE: "+ senderAddress.String() +": "+string(messageBuffer[0:size-1])+"\n")
+	
+}
+
+func CreateProtocol(rpcToSend string, contactsArr []*Contacts, hashToSend string, dataToSend []byte, messageToSend string) []byte{
+	pingProtocol := &Protocol{
+		rpc: rpcToSend,
+		contacts: contactsArr,
+		hash: hashToSend,
+		data: dataToSend,
+		message: messageToSend
+	}
+	prot, err := json.Marshal(pingProtocol)
+	if err != nil{
+		fmt.Println(err)
+	}
+	else{
+		return prot
+	}
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
