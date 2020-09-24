@@ -30,4 +30,5 @@ func InitKademlia(routingtable *RoutingTable) *Kademlia{
 	kademlia := &Kademlia{}
 	kademlia.routingTable = routingTable
 	return kademlia
-}*/
+}
+*/

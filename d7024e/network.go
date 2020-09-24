@@ -115,6 +115,7 @@ func CreateProtocol(rpcToSend string, contactsArr []*Contact, hashToSend string,
 	prot, err := json.Marshal(protocol)
 	if err != nil{
 		fmt.Println(err)
+		return nil
 	}
 	return prot
 }
