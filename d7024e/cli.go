@@ -14,10 +14,11 @@ import (
 func ScanInput() {
 	reader := bufio.NewReader(os.Stdin)
 	readValue, err := reader.ReadString('\n')
+	inputString := strings.Split(readValue, "\n")
 	if err != nil {
 		fmt.Println(err)
 	}
-	input := strings.Split(readValue, " ")
+	input := strings.Split(inputString[0], " ")
 	HandleInput(input)
 }
 
