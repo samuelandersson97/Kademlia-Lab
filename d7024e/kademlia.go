@@ -25,8 +25,10 @@ func (kademlia *Kademlia) Store(data []byte) {
 }
 
 // Creates a new kademlia struct
+/*
 func InitKademlia(routingtable *RoutingTable) *Kademlia{
 	kademlia := &Kademlia{}
 	kademlia.routingTable = routingTable
 	return kademlia
 }
+*/

@@ -48,6 +48,7 @@ func Listen(ip string, port int) {
 	defer c.Close()
 	//creates buffer with maximum length of 8192
 	messageBuffer := make([]byte, 8192)
+	pingResponseMessage := Protocol{}
 	for{
 		//Adds the message from the UDP-channel in the message-buffer. Returns the size of the message and the adress of the sender
 		size, senderAddress, err := c.ReadFromUDP(messageBuffer)
@@ -55,9 +56,10 @@ func Listen(ip string, port int) {
 			fmt.Println("LISTEN ERROR: 3")
 			fmt.Println(err)
 		}
-		fmt.Println("This was sent from "+ senderAddress.String() +": "+string(messageBuffer[0:size-1])+"\n")
-		response := []byte("Det är klart att jag kan!")
-		_, e := c.WriteToUDP(response, senderAddress)
+		json.Unmarshal(messageBuffer[0:size-1], &pingResponseMessage)
+		fmt.Println("MESSAGE: "+pingResponseMessage.message+"\n")
+		pingProtocol := CreateProtocol("PING", nil, "", nil, "PING_RESPONSE")
+		_, e := c.WriteToUDP(pingProtocol, senderAddress)
 		if e != nil {
 			fmt.Println("LISTEN ERROR: 4")
 			fmt.Println(e)
@@ -82,7 +84,7 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Println("SEND ERROR: 2")
 		fmt.Println(err)
 	}
-	pingMessage := CreateProtocol("PING", nil, nil, nil, "PING_SENT")
+	pingMessage := CreateProtocol("PING", nil, "", nil, "PING_SENT")
 	defer c.Close()
 	_, e := c.Write(pingMessage)
 	if e != nil {
@@ -91,19 +93,19 @@ func (network *Network) SendPingMessage(contact *Contact) {
 	}
 	responseBuffer := make([]byte, 8192)
 	receivedPing := Protocol{}
-	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
+	size, _, err := c.ReadFromUDP(responseBuffer)
 	if err != nil {
 		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
 	}else{
-		json.Unmarshal(responseBuffer[0:size-1], &responseBuffer)
-		fmt.Println(responseBuffer)
-		fmt.Println("RESPONSE: "+ responseBuffer.message+"\n")
+		json.Unmarshal(responseBuffer[0:size-1], &receivedPing)
+		fmt.Println(receivedPing)
+		fmt.Println("RESPONSE: "+ receivedPing.message+"\n")
 	}
 	
 }
 
-func CreateProtocol(rpcToSend string, contactsArr []*Contacts, hashToSend string, dataToSend []byte, messageToSend string) []byte{
+func CreateProtocol(rpcToSend string, contactsArr []*Contact, hashToSend string, dataToSend []byte, messageToSend string) []byte{
 	protocol := &Protocol{
 		rpc: rpcToSend,
 		contacts: contactsArr,
@@ -113,9 +115,9 @@ func CreateProtocol(rpcToSend string, contactsArr []*Contacts, hashToSend string
 	prot, err := json.Marshal(protocol)
 	if err != nil{
 		fmt.Println(err)
-	}else{
-		return prot
+		return nil
 	}
+	return prot
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
