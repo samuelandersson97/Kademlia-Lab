@@ -82,7 +82,7 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Println("SEND ERROR: 2")
 		fmt.Println(err)
 	}
-	pingMessage := CreatePingProtocol("PING", nil, nil, nil, "PING_SENT")
+	pingMessage := CreateProtocol("PING", nil, nil, nil, "PING_SENT")
 	defer c.Close()
 	_, e := c.Write(pingMessage)
 	if e != nil {
@@ -104,14 +104,14 @@ func (network *Network) SendPingMessage(contact *Contact) {
 }
 
 func CreateProtocol(rpcToSend string, contactsArr []*Contacts, hashToSend string, dataToSend []byte, messageToSend string) []byte{
-	pingProtocol := &Protocol{
+	protocol := &Protocol{
 		rpc: rpcToSend,
 		contacts: contactsArr,
 		hash: hashToSend,
 		data: dataToSend,
 		message: messageToSend
 	}
-	prot, err := json.Marshal(pingProtocol)
+	prot, err := json.Marshal(protocol)
 	if err != nil{
 		fmt.Println(err)
 	}
