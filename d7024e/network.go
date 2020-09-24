@@ -19,10 +19,10 @@ type Network struct {
 }
 
 type Protocol struct {
-	rpc string,
-	contacts []*Contact,
-	hash string,
-	data []byte,
+	rpc string
+	contacts []*Contact
+	hash string
+	data []byte
 	message string
 }
 
@@ -105,17 +105,16 @@ func (network *Network) SendPingMessage(contact *Contact) {
 
 func CreateProtocol(rpcToSend string, contactsArr []*Contacts, hashToSend string, dataToSend []byte, messageToSend string) []byte{
 	protocol := &Protocol{
-		rpc: rpcToSend,
-		contacts: contactsArr,
-		hash: hashToSend,
-		data: dataToSend,
+		rpc: rpcToSend
+		contacts: contactsArr
+		hash: hashToSend
+		data: dataToSend
 		message: messageToSend
 	}
 	prot, err := json.Marshal(protocol)
 	if err != nil{
 		fmt.Println(err)
-	}
-	else{
+	}else{
 		return prot
 	}
 }
