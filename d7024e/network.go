@@ -3,6 +3,7 @@ package d7024e
 import(
 	"net"
 	"strconv"
+	"time"
 	"fmt"
 )
 
@@ -16,6 +17,9 @@ type Network struct {
 	// Routing table, not contact
 }
 
+//type Network struct {
+//	rTable *RoutingTable
+//}
 /*
 	We should also add a "RPC-struct" that contains the structure of a 'message'/packet that should be sent between the nodes.
 	This struct could then be encoded to a JSON-objcect before being transmitted by an UDP-link.
@@ -113,6 +117,17 @@ func (network *Network) SendStoreMessage(data []byte) {
 	// TODO
 }
 
+func DecodeProtocol(recievedByte []byte) Packet {
+	recievedPacket := Packet{}
+	json.Unmarshal(recievedByte, &recievedPacket)
+	return recievedPacket
+}
+
+func (network *Network) CreateNetwork(contact *Contact) *Network {
+	network := Network{}
+	network.contact = contact
+	return network
+}
 /*
 	Change the InitNetwork to the newly defined struct. Remove contact and add routingtable
 */
@@ -133,3 +148,4 @@ func GetOutboundIP() string {
     localAddr := conn.LocalAddr().(*net.UDPAddr)
     return localAddr.IP.String()
 }
+
