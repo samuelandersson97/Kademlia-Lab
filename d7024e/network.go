@@ -3,7 +3,6 @@ package d7024e
 import(
 	"net"
 	"strconv"
-	"time"
 	"fmt"
 	"encoding/json"
 )
@@ -137,8 +136,8 @@ func (network *Network) SendStoreMessage(data []byte) {
 	// TODO
 }
 
-func DecodeProtocol(recievedByte []byte) Protocol {
-	recievedProt := Protocol{}
+func DecodeProtocol(recievedByte []byte) *Protocol {
+	recievedProt := &Protocol{}
 	json.Unmarshal(recievedByte, &recievedProt)
 	return recievedProt
 }
@@ -173,11 +172,6 @@ func PingHandler(prot *Protocol, responseAddr *UDPAddr, connection *UDPConn){
 		fmt.Println(prot.Message)
 	}
 }
-
-func (network *Network) CreateNetwork(contact *Contact) *Network {
-	network := Network{}
-	network.contact = contact
-	return network
 }
 /*
 	Change the InitNetwork to the newly defined struct. Remove contact and add routingtable
