@@ -58,13 +58,16 @@ func Listen(ip string, port int) {
 			fmt.Println(err)
 		}
 		json.Unmarshal(messageBuffer[:size], &pingResponseMessage)
+		DecodeProtocol(pingResponseMessage)
+		DecodeRPC(pingResponseMessage.Rpc, senderAddress, c)
+		/*
 		fmt.Println("MESSAGE: "+pingResponseMessage.Message+"\n")
 		pingProtocol := CreateProtocol("PING", nil, "", nil, "PING_RESPONSE")
 		_, e := c.WriteToUDP(pingProtocol, senderAddress)
 		if e != nil {
 			fmt.Println("LISTEN ERROR: 4")
 			fmt.Println(e)
-		}
+		}*/
 	}
 }
 
