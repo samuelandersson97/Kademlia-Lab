@@ -20,11 +20,11 @@ type Network struct {
 }
 
 type Protocol struct {
-	rpc string
-	contacts []*Contact
-	hash string
-	data []byte
-	message string
+	Rpc string
+	Contacts []*Contact
+	Hash string
+	Data []byte
+	Message string
 }
 
 
@@ -58,8 +58,8 @@ func Listen(ip string, port int) {
 			fmt.Println("LISTEN ERROR: 3")
 			fmt.Println(err)
 		}
-		json.Unmarshal(messageBuffer[0:size-1], &pingResponseMessage)
-		fmt.Println("MESSAGE: "+pingResponseMessage.message+"\n")
+		json.Unmarshal(messageBuffer[:size], &pingResponseMessage)
+		fmt.Println("MESSAGE: "+pingResponseMessage.Message+"\n")
 		pingProtocol := CreateProtocol("PING", nil, "", nil, "PING_RESPONSE")
 		_, e := c.WriteToUDP(pingProtocol, senderAddress)
 		if e != nil {
@@ -102,18 +102,18 @@ func (network *Network) SendPingMessage(contact *Contact) {
 	}else{
 		json.Unmarshal(responseBuffer[0:size-1], &receivedPing)
 		fmt.Println(receivedPing)
-		fmt.Println("RESPONSE: "+ receivedPing.message+"\n")
+		fmt.Println("RESPONSE: "+ receivedPing.Message+"\n")
 	}
 	
 }
 
 func CreateProtocol(rpcToSend string, contactsArr []*Contact, hashToSend string, dataToSend []byte, messageToSend string) []byte{
 	protocol := &Protocol{
-		rpc: rpcToSend,
-		contacts: contactsArr,
-		hash: hashToSend,
-		data: dataToSend,
-		message: messageToSend}
+		Rpc: rpcToSend,
+		Contacts: contactsArr,
+		Hash: hashToSend,
+		Data: dataToSend,
+		Message: messageToSend}
 	prot, err := json.Marshal(protocol)
 	if err != nil{
 		fmt.Println(err)
@@ -137,10 +137,41 @@ func (network *Network) SendStoreMessage(data []byte) {
 	// TODO
 }
 
-func DecodeProtocol(recievedByte []byte) Packet {
-	recievedPacket := Packet{}
-	json.Unmarshal(recievedByte, &recievedPacket)
-	return recievedPacket
+func DecodeProtocol(recievedByte []byte) Protocol {
+	recievedProt := Protocol{}
+	json.Unmarshal(recievedByte, &recievedProt)
+	return recievedProt
+}
+
+func DecodeRPC(prot *Protocol, senderAddress *UDPAddr, connection *UDPConn){
+	if(prot.Rpc == "PING"){
+		PingHandler(prot, senderAddress, connection)
+	}else if(prot.Rpc == "NODE_LOOKUP"){
+
+	}else if(prot.Rpc == "NODE_VALUE"){
+
+	}else if(prot.Rpc == "STORE"){
+
+	}else{
+		fmt.Println("ERROR. RPC TYPE COULD NOT BE FOUND")
+	}
+}
+
+func PingHandler(prot *Protocol, responseAddr *UDPAddr, connection *UDPConn){
+	/*
+		What if a node is dead? The ping should be able to timeout somehow?
+		There is "SetDeadline"-stuff in the documentation for net, check it out
+	*/
+	if(prot.Message == "PING_SENT"){
+		pingResponseRPC := CreateProtocol("PING",nil,"",nil,"PING_RESPONSE")
+		_, e := connection.WriteToUDP(pingResponseRPC, responseAddr)
+		if e != nil {
+			fmt.Println("PingHandler ERROR")
+			fmt.Println(e)
+		}
+	}else if(prot.Message == "PING_RESPONSE"){
+		fmt.Println(prot.Message)
+	}
 }
 
 func (network *Network) CreateNetwork(contact *Contact) *Network {
