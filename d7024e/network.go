@@ -3,6 +3,7 @@ package d7024e
 import(
 	"net"
 	"strconv"
+	"time"
 	"fmt"
 	"encoding/json"
 )
@@ -25,6 +26,7 @@ type Protocol struct {
 	data []byte
 	message string
 }
+
 
 /*
 	Extract the sent message and create different fucntions that handles different types of messages (PING, FIND_NODE, etc...)
@@ -135,6 +137,17 @@ func (network *Network) SendStoreMessage(data []byte) {
 	// TODO
 }
 
+func DecodeProtocol(recievedByte []byte) Packet {
+	recievedPacket := Packet{}
+	json.Unmarshal(recievedByte, &recievedPacket)
+	return recievedPacket
+}
+
+func (network *Network) CreateNetwork(contact *Contact) *Network {
+	network := Network{}
+	network.contact = contact
+	return network
+}
 /*
 	Change the InitNetwork to the newly defined struct. Remove contact and add routingtable
 */
