@@ -96,13 +96,14 @@ func (network *Network) SendPingMessage(contact *Contact) {
 	}
 	responseBuffer := make([]byte, 8192)
 	receivedPing := Protocol{}
-	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
+	size, _, err := c.ReadFromUDP(responseBuffer)
 	if err != nil {
 		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
 	}else{
-		json.Unmarshal(responseBuffer[:size], &receivedPing)
-		DecodeRPC(&receivedPing, senderAddress, c)
+		json.Unmarshal(responseBuffer[0:size-1], &receivedPing)
+		fmt.Println(receivedPing)
+		fmt.Println("RESPONSE: "+ receivedPing.Message+"\n")
 	}
 	
 }
@@ -145,8 +146,9 @@ func DecodeProtocol(recievedByte []byte) *Protocol {
 }
 
 func DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, connection *net.UDPConn){
-	
+	fmt.Println(prot.Rpc)
 	if(prot.Rpc == "PING"){
+		fmt.Println(prot.Rpc)
 		PingHandler(prot, senderAddress, connection)
 	}else if(prot.Rpc == "NODE_LOOKUP"){
 
@@ -164,8 +166,9 @@ func PingHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPC
 		What if a node is dead? The ping should be able to timeout somehow?
 		There is "SetDeadline"-stuff in the documentation for net, check it out
 	*/
+	fmt.Println("PingHandler: "+prot.message)
 	if(prot.Message == "PING_SENT"){
-		fmt.Println(prot.Message)
+		fmt.Println("Correct if in ping handler fuck!")
 		pingResponseRPC := CreateProtocol("PING",nil,"",nil,"PING_RESPONSE")
 		_, e := connection.WriteToUDP(pingResponseRPC, responseAddr)
 		if e != nil {
