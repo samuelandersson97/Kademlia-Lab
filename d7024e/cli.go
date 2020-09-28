@@ -11,7 +11,7 @@ import (
 	Should be complete
 */
 
-func ScanInput() {
+func ScanInput(me Contact) {
 	reader := bufio.NewReader(os.Stdin)
 	readValue, err := reader.ReadString('\n')
 	inputString := strings.Split(readValue, "\n")
@@ -19,7 +19,7 @@ func ScanInput() {
 		fmt.Println(err)
 	}
 	input := strings.Split(inputString[0], " ")
-	HandleInput(input)
+	HandleInput(input, me)
 }
 
 /*
@@ -29,7 +29,7 @@ func ScanInput() {
 
 */
 
-func HandleInput(s []string) {
+func HandleInput(s []string, me Contact) {
 	operation := s[0]
 	if operation == "ping"{
 		testContact := NewContact(NewRandomKademliaID(), s[1])
@@ -37,7 +37,10 @@ func HandleInput(s []string) {
 		testNetwork.SendPingMessage(&testContact)
 	}else if operation == "node"{
 		if s[1] == "lookup"{
-
+			testRt := InitKademlia(me)
+			testContact := NewContact(NewRandomKademliaID, s[1])
+			testNetwork := InitNetwork(&testContact)
+			LookupContact(&testContact)
 		}else if s[1] == "join"{
 
 		}else{

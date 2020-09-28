@@ -49,7 +49,7 @@ func Listen(ip string, port int) {
 	defer c.Close()
 	//creates buffer with maximum length of 8192
 	messageBuffer := make([]byte, 8192)
-	pingResponseMessage := Protocol{}
+	responseProtocol := Protocol{}
 	for{
 		//Adds the message from the UDP-channel in the message-buffer. Returns the size of the message and the adress of the sender
 		size, senderAddress, err := c.ReadFromUDP(messageBuffer)
@@ -57,16 +57,8 @@ func Listen(ip string, port int) {
 			fmt.Println("LISTEN ERROR: 3")
 			fmt.Println(err)
 		}
-		json.Unmarshal(messageBuffer[:size], &pingResponseMessage)
-		DecodeRPC(&pingResponseMessage, senderAddress, c)
-		/*
-		fmt.Println("MESSAGE: "+pingResponseMessage.Message+"\n")
-		pingProtocol := CreateProtocol("PING", nil, "", nil, "PING_RESPONSE")
-		_, e := c.WriteToUDP(pingProtocol, senderAddress)
-		if e != nil {
-			fmt.Println("LISTEN ERROR: 4")
-			fmt.Println(e)
-		}*/
+		json.Unmarshal(messageBuffer[:size], &responseProtocol)
+		DecodeRPC(&responseProtocol, senderAddress, c)
 	}
 }
 
@@ -95,8 +87,8 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Println(err)
 	}
 	responseBuffer := make([]byte, 8192)
-	receivedPing := Protocol{}
 	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
+	receivedPing := Protocol{}
 	if err != nil {
 		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
@@ -123,10 +115,35 @@ func CreateProtocol(rpcToSend string, contactsArr []*Contact, hashToSend string,
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact) {
-	// TODO
-	/*
-		Create a message and send it to the contact. The message should be of the name "NODE_LOOKUP" and should return the k closest contacts
-	*/
+	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
+	if err != nil {
+		fmt.Println("SEND ERROR: 1")
+		fmt.Println(err)
+	}
+	// Starts up a UDP-connection to the resolved UDP-address 
+	c, err := net.DialUDP("udp4",nil, udpEndPoint)
+	if err != nil {
+		fmt.Println("SEND ERROR: 2")
+		fmt.Println(err)
+	}
+	lookupMessage := CreateProtocol("NODE_LOOKUP", nil, "", nil, "NODE_LOOKUP_SENT")
+	defer c.Close()
+	_, e := c.Write(lookupMessage)
+	if e != nil {
+		fmt.Println("SEND ERROR: 3")
+		fmt.Println(err)
+	}
+	responseBuffer := make([]byte, 8192)
+	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
+	receivedLookup := Protocol{}
+	if err != nil {
+		fmt.Println("SEND ERROR: 4")
+		fmt.Println(err)
+	}else{
+		json.Unmarshal(responseBuffer[:size], &receivedLookup)
+		DecodeRPC(&receivedLookup, senderAddress, c)
+	}
 }
 
 func (network *Network) SendFindDataMessage(hash string) {
@@ -137,19 +154,12 @@ func (network *Network) SendStoreMessage(data []byte) {
 	// TODO
 }
 
-func DecodeProtocol(recievedByte []byte) *Protocol {
-	fmt.Println("Decode prot")
-	recievedProt := &Protocol{}
-	json.Unmarshal(recievedByte, &recievedProt)
-	return recievedProt
-}
-
 func DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, connection *net.UDPConn){
-	
 	if(prot.Rpc == "PING"){
 		PingHandler(prot, senderAddress, connection)
 	}else if(prot.Rpc == "NODE_LOOKUP"){
-
+		fmt.Println("Inside decoder")
+		LookupHandler(prot *Protocol)
 	}else if(prot.Rpc == "NODE_VALUE"){
 
 	}else if(prot.Rpc == "STORE"){
@@ -157,6 +167,10 @@ func DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, connection *net.UDPCo
 	}else{
 		fmt.Println("ERROR. RPC TYPE COULD NOT BE FOUND")
 	}
+}
+
+func LookupHandler(prot *Protocol){
+	fmt.Println("Inside handler")
 }
 
 func PingHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn){
