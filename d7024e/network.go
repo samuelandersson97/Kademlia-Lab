@@ -159,7 +159,7 @@ func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr,
 	if(prot.Message == "NODE_LOOKUP_SENT"){
 		fmt.Println("Inside NODE_LOOKUP_SENT")
 		targetContact := Contact{}
-		json.Unmarshal(prot.Data[:prot.Data.length], &targetContact)
+		json.Unmarshal(prot.Data[:len(prot.Data)], &targetContact)
 		closestContactsArray := network.routingTable.FindClosestContacts(targetContact.ID, 3)
 		lookupProtocolResponse := CreateProtocol("NODE_LOOKUP",closestContactsArray,"",prot.Data,"NODE_LOOKUP_RESPONSE")
 		_, e := connection.WriteToUDP(lookupProtocolResponse, responseAddr)
