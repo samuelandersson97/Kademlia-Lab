@@ -32,15 +32,17 @@ func ScanInput(me Contact) {
 func HandleInput(s []string, me Contact) {
 	operation := s[0]
 	if operation == "ping"{
+		testRT := NewRoutingTable(me)
 		testContact := NewContact(NewRandomKademliaID(), s[1])
-		testNetwork := InitNetwork(&testContact)
+		testNetwork := InitNetwork(testRT)
 		testNetwork.SendPingMessage(&testContact)
 	}else if operation == "node"{
 		if s[1] == "lookup"{
+			testRT := NewRoutingTable(me)
 			testContact := NewContact(NewRandomKademliaID(), s[2])
-			testKad := InitKademlia(me, testNetwork)
+			testNetwork := InitNetwork(testRT)
+			testKad := InitKademlia(testRT, testNetwork)
 			testKad.testNetwork.AddContact(testContact)
-			testNetwork := InitNetwork(testKad.routingTable)
 			testKad.LookupContact(&testContact)
 		}else if s[1] == "join"{
 

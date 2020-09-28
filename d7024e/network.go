@@ -28,7 +28,7 @@ type Protocol struct {
 	Extract the sent message and create different fucntions that handles different types of messages (PING, FIND_NODE, etc...)
 */
 
-func Listen(ip string, port int) {
+func (network *Network) Listen(ip string, port int) {
 	adrPort := ip+":"+strconv.Itoa(port)
 	fmt.Println("Listening at "+adrPort+ ".....")
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
@@ -55,7 +55,7 @@ func Listen(ip string, port int) {
 			fmt.Println(err)
 		}
 		json.Unmarshal(messageBuffer[:size], &responseProtocol)
-		_ := network.DecodeRPC(&responseProtocol, senderAddress, c)
+		_ = network.DecodeRPC(&responseProtocol, senderAddress, c)
 	}
 }
 
@@ -91,7 +91,7 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Println(err)
 	}else{
 		json.Unmarshal(responseBuffer[:size], &receivedPing)
-		_ := network.DecodeRPC(&receivedPing, senderAddress, c)
+		_ = network.DecodeRPC(&receivedPing, senderAddress, c)
 	}
 	
 }
@@ -123,6 +123,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	if err != nil {
 		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
+		return nil
 	}else{
 		json.Unmarshal(responseBuffer[:size], &receivedLookup)
 		contactProt := network.DecodeRPC(&receivedLookup, senderAddress, c)
@@ -142,13 +143,14 @@ func (network *Network) DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, co
 	if(prot.Rpc == "PING"){
 		return network.PingHandler(prot, senderAddress, connection)
 	}else if(prot.Rpc == "NODE_LOOKUP"){
-		return network.LookupHandler(prot)
+		return network.LookupHandler(prot, senderAddress, connection)
 	}else if(prot.Rpc == "NODE_VALUE"){
-
+		return nil
 	}else if(prot.Rpc == "STORE"){
-
+		return nil
 	}else{
 		fmt.Println("ERROR. RPC TYPE COULD NOT BE FOUND")
+		return nil
 	}
 }
 

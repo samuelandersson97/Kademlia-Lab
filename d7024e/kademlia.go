@@ -8,8 +8,10 @@ type Kademlia struct {
 }
 
 func (kademlia *Kademlia) LookupContact(target *Contact) {
-	//closestContacts := routingTable.FindClosestContacts(target.ID, 5) // 5 should be the size of the bucket size or alpha? 
-	kademlia.network.SendFindContactMessage(contactToAsk, target)
+	closestContacts := routingTable.FindClosestContacts(target.ID, 3) // 3 should be the size of the bucket size or alpha? 
+	for(int i = 0; i<closestContacts.length-1; i++){
+		reqClosest := go kademlia.network.SendFindContactMessage(closestContacts[i], target)
+	}
 	// TODO (Node look up (Node Join))
 	//	1. 	Async calls (Alpha decides how many?) to search for the contact in the 
 	//		network (Using network.sendFindContactMessage).
@@ -26,9 +28,9 @@ func (kademlia *Kademlia) Store(data []byte) {
 }
 
 // Creates a new kademlia struct
-func InitKademlia(me Contact, network *Network) *Kademlia{
+func InitKademlia(rt *RoutingTable, network *Network) *Kademlia{
 	kademlia := &Kademlia{}
-	kademlia.routingTable = NewRoutingTable(me)
+	kademlia.routingTable = rt
 	kademlia.network = network
 	return kademlia
 }
