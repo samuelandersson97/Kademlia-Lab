@@ -2,13 +2,14 @@ package d7024e
 
 type Kademlia struct {
 	routingTable *RoutingTable
+	network *Network
 	// Routing table holds the contact information about this node 
 	// It also has information about the bucket and holds information about contacts that this node knows are in the network.
 }
 
 func (kademlia *Kademlia) LookupContact(target *Contact) {
 	//closestContacts := routingTable.FindClosestContacts(target.ID, 5) // 5 should be the size of the bucket size or alpha? 
-
+	network.SendFindContactMessage(target)
 	// TODO (Node look up (Node Join))
 	//	1. 	Async calls (Alpha decides how many?) to search for the contact in the 
 	//		network (Using network.sendFindContactMessage).
@@ -25,8 +26,9 @@ func (kademlia *Kademlia) Store(data []byte) {
 }
 
 // Creates a new kademlia struct
-func InitKademlia(me Contact) *Kademlia{
+func InitKademlia(me Contact, network *Network) *Kademlia{
 	kademlia := &Kademlia{}
 	kademlia.routingTable = NewRoutingTable(me)
+	kademlia.network = network
 	return kademlia
 }
