@@ -38,8 +38,9 @@ func HandleInput(s []string, me Contact) {
 	}else if operation == "node"{
 		if s[1] == "lookup"{
 			testContact := NewContact(NewRandomKademliaID(), s[2])
-			testNetwork := InitNetwork(&testContact)
-			testKad := InitKademlia(me, &testNetwork)
+			testKad := InitKademlia(me, testNetwork)
+			testKad.testNetwork.AddContact(testContact)
+			testNetwork := InitNetwork(testKad.routingTable)
 			testKad.LookupContact(&testContact)
 		}else if s[1] == "join"{
 
