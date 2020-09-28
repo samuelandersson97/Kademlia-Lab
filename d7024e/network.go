@@ -159,8 +159,8 @@ func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr,
 	if(prot.Message == "NODE_LOOKUP_SENT"){
 		fmt.Println("Inside NODE_LOOKUP_SENT")
 		targetContact := Contact{}
-		json.Unmarshal(prot.data[:prot.data.length], &targetContact)
-		closestContactsArray := network.routingTable.FindClosestContact(targetContact.ID, 3)
+		json.Unmarshal(prot.Data[:prot.Data.length], &targetContact)
+		closestContactsArray := network.routingTable.FindClosestContacts(targetContact.ID, 3)
 		lookupProtocolResponse := CreateProtocol("NODE_LOOKUP",closestContactsArray,"",prot.Data,"NODE_LOOKUP_RESPONSE")
 		_, e := connection.WriteToUDP(lookupProtocolResponse, responseAddr)
 		if e != nil{
@@ -172,7 +172,7 @@ func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr,
 		fmt.Println("Inside NODE_LOOKUP_RESPONSE")
 		return prot
 	}
-	
+	return nil
 }
 
 func (network *Network) PingHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
@@ -193,6 +193,7 @@ func (network *Network) PingHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 		fmt.Println(prot.Message)
 		return prot
 	}
+	return nil
 }
 
 func ContactToByteArray(contact *Contact) []byte {
@@ -205,7 +206,7 @@ func ContactToByteArray(contact *Contact) []byte {
 	return contactByteArray
 }
 
-func CreateProtocol(rpcToSend string, contactsArr []*Contact, hashToSend string, dataToSend []byte, messageToSend string) []byte{
+func CreateProtocol(rpcToSend string, contactsArr []Contact, hashToSend string, dataToSend []byte, messageToSend string) []byte{
 	protocol := &Protocol{
 		Rpc: rpcToSend,
 		Contacts: contactsArr,

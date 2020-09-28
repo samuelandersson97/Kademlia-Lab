@@ -42,7 +42,7 @@ func HandleInput(s []string, me Contact) {
 			testContact := NewContact(NewRandomKademliaID(), s[2])
 			testNetwork := InitNetwork(testRT)
 			testKad := InitKademlia(testRT, testNetwork)
-			testKad.testNetwork.AddContact(testContact)
+			testKad.routingTable.AddContact(testContact)
 			testKad.LookupContact(&testContact)
 		}else if s[1] == "join"{
 

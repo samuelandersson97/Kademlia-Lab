@@ -8,8 +8,8 @@ type Kademlia struct {
 }
 
 func (kademlia *Kademlia) LookupContact(target *Contact) {
-	closestContacts := routingTable.FindClosestContacts(target.ID, 3) // 3 should be the size of the bucket size or alpha? 
-	for int i := 0; i<closestContacts.length-1; i++{
+	closestContacts := kademlia.routingTable.FindClosestContacts(target.ID, 3) // 3 should be the size of the bucket size or alpha? 
+	for i := 0; i<closestContacts.length-1; i++{
 		/*
 		reqClosest := kademlia.network.SendFindContactMessage(closestContacts[i], target)
 		*/
