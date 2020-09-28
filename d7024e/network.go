@@ -159,7 +159,7 @@ func DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, connection *net.UDPCo
 		PingHandler(prot, senderAddress, connection)
 	}else if(prot.Rpc == "NODE_LOOKUP"){
 		fmt.Println("Inside decoder")
-		LookupHandler(prot *Protocol)
+		LookupHandler(prot)
 	}else if(prot.Rpc == "NODE_VALUE"){
 
 	}else if(prot.Rpc == "STORE"){

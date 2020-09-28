@@ -37,10 +37,10 @@ func HandleInput(s []string, me Contact) {
 		testNetwork.SendPingMessage(&testContact)
 	}else if operation == "node"{
 		if s[1] == "lookup"{
-			testRt := InitKademlia(me)
-			testContact := NewContact(NewRandomKademliaID, s[1])
+			testKad := InitKademlia(me)
+			testContact := NewContact(NewRandomKademliaID(), s[1])
 			testNetwork := InitNetwork(&testContact)
-			LookupContact(&testContact)
+			testKad.LookupContact(&testContact)
 		}else if s[1] == "join"{
 
 		}else{
