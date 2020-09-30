@@ -10,10 +10,13 @@ import (
 
 func main() {
 	myIP := d7024e.GetOutboundIP()
-	me := d7024e.NewContact(NewRandomKademliaID(),myIP,nil)
-	go d7024e.Listen(myIP, 1111)
+	me := d7024e.NewContact(d7024e.NewRandomKademliaID(),myIP)
+	rt := d7024e.NewRoutingTable(me)
+	network := d7024e.InitNetwork(rt)
+	kad := d7024e.InitKademlia(network)
+	go network.Listen(myIP, 1111)
 	d7024e.CliGreeting()
 	for{
-		d7024e.ScanInput(me)
+		d7024e.ScanInput(kad)
 	}
 }

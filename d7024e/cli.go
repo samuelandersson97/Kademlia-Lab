@@ -11,7 +11,7 @@ import (
 	Should be complete
 */
 
-func ScanInput(me Contact) {
+func ScanInput(kad *Kademlia) {
 	reader := bufio.NewReader(os.Stdin)
 	readValue, err := reader.ReadString('\n')
 	inputString := strings.Split(readValue, "\n")
@@ -19,7 +19,7 @@ func ScanInput(me Contact) {
 		fmt.Println(err)
 	}
 	input := strings.Split(inputString[0], " ")
-	HandleInput(input, me)
+	HandleInput(input, network, kad)
 }
 
 /*
@@ -29,20 +29,25 @@ func ScanInput(me Contact) {
 
 */
 
-func HandleInput(s []string, me Contact) {
+func HandleInput(s []string, network *Network, kad *Kademlia) {
 	operation := s[0]
 	if operation == "ping"{
-		testContact := NewContact(NewRandomKademliaID(), s[1])
-		testNetwork := InitNetwork(&testContact)
-		testNetwork.SendPingMessage(&testContact)
+		contact := NewContact(NewRandomKademliaID(), s[1])
+		kad.network.SendPingMessage(&contact)
 	}else if operation == "node"{
 		if s[1] == "lookup"{
-			testRt := InitKademlia(me)
-			testContact := NewContact(NewRandomKademliaID, s[1])
-			testNetwork := InitNetwork(&testContact)
-			LookupContact(&testContact)
+			contact := NewContact(NewRandomKademliaID(), s[2])
+			kad.network.routingTable.AddContact(contact)
+			kad.LookupContact(&contact)
 		}else if s[1] == "join"{
-
+			kad.NodeJoin(s[2])
+		/*
+			1.	Ip address supplied to the node we are joining.
+			2.	Random id is supplied to this node.   
+			3.	K-bucket is initialised with the node that we first know, collect information about this node. 
+			4.	Lookup on itself to gain close nodes and the routing table is then updated in this function. 
+			5.	Done!
+		*/
 		}else{
 			fmt.Println("Incorrect command!")
 		}
