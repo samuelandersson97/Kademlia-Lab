@@ -12,15 +12,12 @@ import(
 */
 
 type Network struct {
-	//Testing for ping only, should be more than one contact
-	contact *Contact
-	// Routing table, not contact
-
+	routingTable *RoutingTable
 }
 
 type Protocol struct {
 	Rpc string
-	Contacts []*Contact
+	Contacts []Contact
 	Hash string
 	Data []byte
 	Message string
@@ -31,7 +28,7 @@ type Protocol struct {
 	Extract the sent message and create different fucntions that handles different types of messages (PING, FIND_NODE, etc...)
 */
 
-func Listen(ip string, port int) {
+func (network *Network) Listen(ip string, port int) {
 	adrPort := ip+":"+strconv.Itoa(port)
 	fmt.Println("Listening at "+adrPort+ ".....")
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
@@ -58,7 +55,7 @@ func Listen(ip string, port int) {
 			fmt.Println(err)
 		}
 		json.Unmarshal(messageBuffer[:size], &responseProtocol)
-		DecodeRPC(&responseProtocol, senderAddress, c)
+		_ = network.DecodeRPC(&responseProtocol, senderAddress, c)
 	}
 }
 
@@ -94,12 +91,122 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Println(err)
 	}else{
 		json.Unmarshal(responseBuffer[:size], &receivedPing)
-		DecodeRPC(&receivedPing, senderAddress, c)
+		_ = network.DecodeRPC(&receivedPing, senderAddress, c)
 	}
 	
 }
 
-func CreateProtocol(rpcToSend string, contactsArr []*Contact, hashToSend string, dataToSend []byte, messageToSend string) []byte{
+func (network *Network) SendFindContactMessage(contact *Contact, target *Contact) []Contact {
+	targetArr := ContactToByteArray(target)
+	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
+	if err != nil {
+		fmt.Println("SEND ERROR: 1")
+		fmt.Println(err)
+	}
+	// Starts up a UDP-connection to the resolved UDP-address 
+	c, err := net.DialUDP("udp4",nil, udpEndPoint)
+	if err != nil {
+		fmt.Println("SEND ERROR: 2")
+		fmt.Println(err)
+	}
+	lookupMessage := CreateProtocol("NODE_LOOKUP", nil, "", targetArr, "NODE_LOOKUP_SENT")
+	defer c.Close()
+	_, e := c.Write(lookupMessage)
+	if e != nil {
+		fmt.Println("SEND ERROR: 3")
+		fmt.Println(err)
+	}
+	responseBuffer := make([]byte, 8192)
+	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
+	receivedLookup := Protocol{}
+	if err != nil {
+		fmt.Println("SEND ERROR: 4")
+		fmt.Println(err)
+		return nil
+	}else{
+		json.Unmarshal(responseBuffer[:size], &receivedLookup)
+		contactProt := network.DecodeRPC(&receivedLookup, senderAddress, c)
+		return contactProt.Contacts
+	}
+}
+
+func (network *Network) SendFindDataMessage(hash string) {
+	// TODO
+}
+
+func (network *Network) SendStoreMessage(data []byte) {
+	// TODO
+}
+
+func (network *Network) DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, connection *net.UDPConn) *Protocol{
+	if(prot.Rpc == "PING"){
+		return network.PingHandler(prot, senderAddress, connection)
+	}else if(prot.Rpc == "NODE_LOOKUP"){
+		return network.LookupHandler(prot, senderAddress, connection)
+	}else if(prot.Rpc == "NODE_VALUE"){
+		return nil
+	}else if(prot.Rpc == "STORE"){
+		return nil
+	}else{
+		fmt.Println("ERROR. RPC TYPE COULD NOT BE FOUND")
+		return nil
+	}
+}
+
+func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
+	fmt.Println("Inside handler")
+	if(prot.Message == "NODE_LOOKUP_SENT"){
+		fmt.Println("Inside NODE_LOOKUP_SENT")
+		targetContact := Contact{}
+		json.Unmarshal(prot.Data[:len(prot.Data)], &targetContact)
+		closestContactsArray := network.routingTable.FindClosestContacts(targetContact.ID, 3)
+		lookupProtocolResponse := CreateProtocol("NODE_LOOKUP",closestContactsArray,"",prot.Data,"NODE_LOOKUP_RESPONSE")
+		_, e := connection.WriteToUDP(lookupProtocolResponse, responseAddr)
+		if e != nil{
+			fmt.Println("LookupHandler ERROR")
+			fmt.Println(e)
+		}
+		return prot
+	}else if(prot.Message == "NODE_LOOKUP_RESPONSE"){
+		fmt.Println("Inside NODE_LOOKUP_RESPONSE")
+		return prot
+	}
+	return nil
+}
+
+func (network *Network) PingHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
+	/*
+		What if a node is dead? The ping should be able to timeout somehow?
+		There is "SetDeadline"-stuff in the documentation for net, check it out
+	*/
+	if(prot.Message == "PING_SENT"){
+		fmt.Println(prot.Message)
+		pingResponseRPC := CreateProtocol("PING",nil,"",nil,"PING_RESPONSE")
+		_, e := connection.WriteToUDP(pingResponseRPC, responseAddr)
+		if e != nil {
+			fmt.Println("PingHandler ERROR")
+			fmt.Println(e)
+		}
+		return prot
+	}else if(prot.Message == "PING_RESPONSE"){
+		fmt.Println(prot.Message)
+		return prot
+	}
+	return nil
+}
+
+func ContactToByteArray(contact *Contact) []byte {
+	contactByteArray, err := json.Marshal(contact)
+	if err != nil{
+		fmt.Println(err)
+		fmt.Println("FAIL IN CONVERSION")
+		return nil
+	}
+	return contactByteArray
+}
+
+func CreateProtocol(rpcToSend string, contactsArr []Contact, hashToSend string, dataToSend []byte, messageToSend string) []byte{
 	protocol := &Protocol{
 		Rpc: rpcToSend,
 		Contacts: contactsArr,
@@ -114,90 +221,13 @@ func CreateProtocol(rpcToSend string, contactsArr []*Contact, hashToSend string,
 	return prot
 }
 
-func (network *Network) SendFindContactMessage(contact *Contact) {
-	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
-	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
-	if err != nil {
-		fmt.Println("SEND ERROR: 1")
-		fmt.Println(err)
-	}
-	// Starts up a UDP-connection to the resolved UDP-address 
-	c, err := net.DialUDP("udp4",nil, udpEndPoint)
-	if err != nil {
-		fmt.Println("SEND ERROR: 2")
-		fmt.Println(err)
-	}
-	lookupMessage := CreateProtocol("NODE_LOOKUP", nil, "", nil, "NODE_LOOKUP_SENT")
-	defer c.Close()
-	_, e := c.Write(lookupMessage)
-	if e != nil {
-		fmt.Println("SEND ERROR: 3")
-		fmt.Println(err)
-	}
-	responseBuffer := make([]byte, 8192)
-	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
-	receivedLookup := Protocol{}
-	if err != nil {
-		fmt.Println("SEND ERROR: 4")
-		fmt.Println(err)
-	}else{
-		json.Unmarshal(responseBuffer[:size], &receivedLookup)
-		DecodeRPC(&receivedLookup, senderAddress, c)
-	}
-}
-
-func (network *Network) SendFindDataMessage(hash string) {
-	// TODO
-}
-
-func (network *Network) SendStoreMessage(data []byte) {
-	// TODO
-}
-
-func DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, connection *net.UDPConn){
-	if(prot.Rpc == "PING"){
-		PingHandler(prot, senderAddress, connection)
-	}else if(prot.Rpc == "NODE_LOOKUP"){
-		fmt.Println("Inside decoder")
-		LookupHandler(prot *Protocol)
-	}else if(prot.Rpc == "NODE_VALUE"){
-
-	}else if(prot.Rpc == "STORE"){
-
-	}else{
-		fmt.Println("ERROR. RPC TYPE COULD NOT BE FOUND")
-	}
-}
-
-func LookupHandler(prot *Protocol){
-	fmt.Println("Inside handler")
-}
-
-func PingHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn){
-	/*
-		What if a node is dead? The ping should be able to timeout somehow?
-		There is "SetDeadline"-stuff in the documentation for net, check it out
-	*/
-	if(prot.Message == "PING_SENT"){
-		fmt.Println(prot.Message)
-		pingResponseRPC := CreateProtocol("PING",nil,"",nil,"PING_RESPONSE")
-		_, e := connection.WriteToUDP(pingResponseRPC, responseAddr)
-		if e != nil {
-			fmt.Println("PingHandler ERROR")
-			fmt.Println(e)
-		}
-	}else if(prot.Message == "PING_RESPONSE"){
-		fmt.Println(prot.Message)
-	}
-}
-
 /*
 	Change the InitNetwork to the newly defined struct. Remove contact and add routingtable
 */
 
-func InitNetwork(contact *Contact) *Network{
+func InitNetwork(rt *RoutingTable) *Network{
 	network := &Network{}
-	network.contact = contact
+	network.routingTable = rt
 	return network
 }
 
