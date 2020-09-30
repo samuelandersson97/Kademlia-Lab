@@ -129,9 +129,9 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	}
 }
 
-func (network *Network) SendFindNodeMessage(address string, me Contact) Contact {
-	joinData := ContactToByteAray(*me)
-	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
+func (network *Network) SendNodeJoinMessage(address string, me Contact) Contact {
+	joinData := ContactToByteArray(&me)
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",address+":1111")
 	if err != nil {
 		fmt.Println("SEND ERROR: 1")
 		fmt.Println(err)
@@ -155,14 +155,14 @@ func (network *Network) SendFindNodeMessage(address string, me Contact) Contact 
 	if err != nil {
 		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
-		return nil
-	}else{
-		json.Unmarshal(responseBuffer[:size], &receivedJoin)
-		responseProtocol := network.DecodeRPC(&receivedJoin, senderAddress, c)
-		contactInformation := Contact{}
-		json.Unmarshal(responseProtocol.Data[:len(responseProtocol.Data)], &contactInformation)
-		return contactInformation
+		
 	}
+	json.Unmarshal(responseBuffer[:size], &receivedJoin)
+	responseProtocol := network.DecodeRPC(&receivedJoin, senderAddress, c)
+	contactInformation := Contact{}
+	json.Unmarshal(responseProtocol.Data[:len(responseProtocol.Data)], &contactInformation)
+	return contactInformation
+	
 }
 
 func (network *Network) SendFindDataMessage(hash string) {
@@ -190,20 +190,17 @@ func (network *Network) DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, co
 	}
 }
 
-func (network *Network) JoinHandler(prot *Protocol, senderAddress *net.UDPAddr, connection *net.UDPConn) *Protocol{
+func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
 	fmt.Println("Inside join handler")
 	if(prot.Message == "NODE_JOIN_SENT"){
-		/*
-			Note that the last step (node lookup on itself) is never executed here.
-			Don't know how tho reach the kademlia instance
-		*/
+
 		fmt.Println("Inside NODE_JOIN_SENT")
 		//Adds contact
 		sendContact := Contact{}
-		json.Unmarshal(prot.Data(:len(prot.Data)), &sendContact)
+		json.Unmarshal(prot.Data[:len(prot.Data)], &sendContact)
 		network.routingTable.AddContact(sendContact)
 		//Respond with my own contact
-		meContact := ContactToByteAray(*network.routingTable.me)
+		meContact := ContactToByteArray(&network.routingTable.me)
 		joinProtocolResponse := CreateProtocol("NODE_JOIN",nil,"",meContact,"NODE_JOIN_RESPONSE")
 		_, e := connection.WriteToUDP(joinProtocolResponse, responseAddr)
 		if e != nil{
@@ -211,10 +208,11 @@ func (network *Network) JoinHandler(prot *Protocol, senderAddress *net.UDPAddr, 
 			fmt.Println(e)
 		}
 		return prot
-	}else if(prot.message == "NODE_JOIN_RESPONSE"){
+	}else if(prot.Message == "NODE_JOIN_RESPONSE"){
 		fmt.Println("Inside NODE_JOIN_RESPONSE")
 		return prot
 	}
+	return nil
 }
 
 func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{

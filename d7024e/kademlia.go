@@ -34,6 +34,16 @@ func (kademlia *Kademlia) Store(data []byte) {
 func (kademlia *Kademlia) NodeJoin(address string) {
 	contactToAdd := kademlia.network.SendNodeJoinMessage(address, kademlia.network.routingTable.me)
 	kademlia.network.routingTable.AddContact(contactToAdd)
+	//Add node lookup with this node as the target (Then the node should get an updated routing-table)
+	
+	/* // Comment back in to check for bucket elements
+	for i := 0; i < 160 ; i++ {
+		if(kademlia.network.routingTable.buckets[i].Len() > 0){
+			fmt.Println(kademlia.network.routingTable.buckets[i].list.Front())
+		}
+		
+	}*/
+	
 }
 
 func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact) {
@@ -86,7 +96,7 @@ func (kademlia *Kademlia)FindClosestDist(contacts []Contact, target *Contact) (i
 		}
 		return index,contact,""
 	}
-	return 0, kademlia.routingTable.me, "Error: No contacts!"
+	return 0, kademlia.network.routingTable.me, "Error: No contacts!"
 	
 }
 

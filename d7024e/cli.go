@@ -19,7 +19,7 @@ func ScanInput(kad *Kademlia) {
 		fmt.Println(err)
 	}
 	input := strings.Split(inputString[0], " ")
-	HandleInput(input, network, kad)
+	HandleInput(input, kad)
 }
 
 /*
@@ -29,7 +29,7 @@ func ScanInput(kad *Kademlia) {
 
 */
 
-func HandleInput(s []string, network *Network, kad *Kademlia) {
+func HandleInput(s []string,  kad *Kademlia) {
 	operation := s[0]
 	if operation == "ping"{
 		contact := NewContact(NewRandomKademliaID(), s[1])
