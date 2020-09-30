@@ -107,7 +107,7 @@ func (kademlia *Kademlia)SortListBasedOnID(contacts []Contact, target *Contact) 
 		if err != "" {
 			fmt.Println(err)
 		}else{
-			newList[i] = contact
+			newList = append(newList, contact)
 			contacts = DeleteFromContactList(contacts, index)
 		}
 		
