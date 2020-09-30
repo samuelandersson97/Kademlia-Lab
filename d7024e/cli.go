@@ -11,7 +11,7 @@ import (
 	Should be complete
 */
 
-func ScanInput(network *Network, kad *Kademlia) {
+func ScanInput(kad *Kademlia) {
 	reader := bufio.NewReader(os.Stdin)
 	readValue, err := reader.ReadString('\n')
 	inputString := strings.Split(readValue, "\n")
@@ -33,13 +33,14 @@ func HandleInput(s []string, network *Network, kad *Kademlia) {
 	operation := s[0]
 	if operation == "ping"{
 		contact := NewContact(NewRandomKademliaID(), s[1])
-		network.SendPingMessage(&contact)
+		kad.network.SendPingMessage(&contact)
 	}else if operation == "node"{
 		if s[1] == "lookup"{
 			contact := NewContact(NewRandomKademliaID(), s[2])
-			kad.routingTable.AddContact(contact)
+			kad.network.routingTable.AddContact(contact)
 			kad.LookupContact(&contact)
 		}else if s[1] == "join"{
+			kad.NodeJoin(s[2])
 		/*
 			1.	Ip address supplied to the node we are joining.
 			2.	Random id is supplied to this node.   
