@@ -1,6 +1,9 @@
 package d7024e
 
-
+import (
+	"fmt"
+)
+	
 
 type Kademlia struct {
 	routingTable *RoutingTable
@@ -39,10 +42,15 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact) {
 	for _, co := range returnContacts{
 		kademlia.routingTable.AddContact(co)
 	}
-	sortedReturnContacts := SortListBasedOnID(returnContacts, target)
-	if(contacts[0].ID.Less(sortedReturnContacts[0].ID)){
-		kademlia.PerformQuery(sortedReturnContacts, target)
+	sortedReturnContacts := kademlia.SortListBasedOnID(returnContacts, target)
+	if(len(sortedReturnContacts) > 0 && len(contacts) > 0){
+		if(contacts[0].ID.Less(sortedReturnContacts[0].ID)){
+			kademlia.PerformQuery(sortedReturnContacts, target)
+		}
+	}else{
+		fmt.Println("Error: No contacts!")
 	}
+	
 }
 
 /*
@@ -60,26 +68,35 @@ func (kademlia *Kademlia) requestFromClosest(contact *Contact, target *Contact) 
 	return r
 }
 
-func FindClosestDist(contacts []Contact, target *Contact) (int,Contact){
-	closest := contacts[0].ID
-	contact := contacts[0]
-	index := 0
-	for i, c := range contacts{
-		if c.ID.CalcDistance(target.ID).Less(closest){
-			closest = c.ID
-			contact = c
-			index = i
+func (kademlia *Kademlia)FindClosestDist(contacts []Contact, target *Contact) (int,Contact, string){
+	if len(contacts) > 0 {
+		closest := contacts[0].ID
+		contact := contacts[0]
+		index := 0
+		for i, c := range contacts{
+			if c.ID.CalcDistance(target.ID).Less(closest){
+				closest = c.ID
+				contact = c
+				index = i
+			}
 		}
+		return index,contact,""
 	}
-	return index,contact
+	return 0, kademlia.routingTable.me, "Error: No contacts!"
+	
 }
 
-func SortListBasedOnID(contacts []Contact, target *Contact) []Contact{
+func (kademlia *Kademlia)SortListBasedOnID(contacts []Contact, target *Contact) []Contact{
 	var newList []Contact
 	for i := 0; i <= alpha; i++{
-		index, contact := FindClosestDist(contacts, target)
-		newList[i] = contact
-		contacts = DeleteFromContactList(contacts, index)
+		index, contact, err := kademlia.FindClosestDist(contacts, target)
+		if err != "" {
+			fmt.Println(err)
+		}else{
+			newList[i] = contact
+			contacts = DeleteFromContactList(contacts, index)
+		}
+		
 	}
 	return newList
 }
