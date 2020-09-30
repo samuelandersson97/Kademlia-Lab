@@ -7,25 +7,38 @@ import (
 	"strings"
 )
 
-func ScanInput() {
+/*
+	Should be complete
+*/
+
+func ScanInput(network *Network, kad *Kademlia) {
 	reader := bufio.NewReader(os.Stdin)
 	readValue, err := reader.ReadString('\n')
+	inputString := strings.Split(readValue, "\n")
 	if err != nil {
 		fmt.Println(err)
 	}
-	input := strings.Split(readValue, " ")
-	HandleInput(input)
+	input := strings.Split(inputString[0], " ")
+	HandleInput(input, network, kad)
 }
 
-func HandleInput(s []string) {
+/*
+	Should add support for 'node lookup', 'node join', 'put' and 'get' when we are finished creating the support for these operations.
+
+	Note that the 'ping' operation should be changed since we are creating networks and contacts there as it stands just to test the operation.
+
+*/
+
+func HandleInput(s []string, network *Network, kad *Kademlia) {
 	operation := s[0]
 	if operation == "ping"{
-		testContact := NewContact(NewRandomKademliaID(), s[1])
-		testNetwork := InitNetwork(&testContact)
-		testNetwork.SendPingMessage(&testContact)
+		contact := NewContact(NewRandomKademliaID(), s[1])
+		network.SendPingMessage(&contact)
 	}else if operation == "node"{
 		if s[1] == "lookup"{
-
+			contact := NewContact(NewRandomKademliaID(), s[2])
+			kad.routingTable.AddContact(contact)
+			kad.LookupContact(&contact)
 		}else if s[1] == "join"{
 
 		}else{
