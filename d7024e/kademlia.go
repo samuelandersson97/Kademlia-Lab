@@ -3,7 +3,6 @@ package d7024e
 
 
 type Kademlia struct {
-	routingTable *RoutingTable
 	network *Network
 	// Routing table holds the contact information about this node 
 	// It also has information about the bucket and holds information about contacts that this node knows are in the network.
@@ -12,7 +11,7 @@ type Kademlia struct {
 const alpha = 3
 
 func (kademlia *Kademlia) LookupContact(target *Contact) {
-	closestContacts := kademlia.routingTable.FindClosestContacts(target.ID, alpha) // 3 should be the size of the bucket size or alpha? 
+	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha) // 3 should be the size of the bucket size or alpha? 
 	kademlia.PerformQuery(closestContacts, target)
 	// TODO (Node look up (Node Join))
 	//	1. 	Async calls (Alpha decides how many?) to search for the contact in the 
@@ -29,6 +28,11 @@ func (kademlia *Kademlia) Store(data []byte) {
 	// TODO
 }
 
+func (kademlia *Kademlia) NodeJoin(address string) {
+	contactToAdd := kademlia.network.SendNodeJoinMessage(address, kademlia.network.routingTable.me)
+	kademlia.network.routingTable.AddContact(contactToAdd)
+}
+
 func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact) {
 	var returnContacts []Contact
 	var a []Contact
@@ -37,7 +41,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact) {
 		returnContacts=append(returnContacts,a...)
 	}
 	for _, co := range returnContacts{
-		kademlia.routingTable.AddContact(co)
+		kademlia.network.routingTable.AddContact(co)
 	}
 	sortedReturnContacts := SortListBasedOnID(returnContacts, target)
 	if(contacts[0].ID.Less(sortedReturnContacts[0].ID)){
@@ -92,9 +96,8 @@ func DeleteFromContactList(contacts []Contact, i int) []Contact{
 }
 
 // Creates a new kademlia struct
-func InitKademlia(rt *RoutingTable, network *Network) *Kademlia{
+func InitKademlia(network *Network) *Kademlia{
 	kademlia := &Kademlia{}
-	kademlia.routingTable = rt
 	kademlia.network = network
 	return kademlia
 }

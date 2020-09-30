@@ -23,11 +23,9 @@ type Protocol struct {
 	Message string
 }
 
-
 /*
 	Extract the sent message and create different fucntions that handles different types of messages (PING, FIND_NODE, etc...)
 */
-
 func (network *Network) Listen(ip string, port int) {
 	adrPort := ip+":"+strconv.Itoa(port)
 	fmt.Println("Listening at "+adrPort+ ".....")
@@ -131,6 +129,42 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	}
 }
 
+func (network *Network) SendFindNodeMessage(address string, me Contact) Contact {
+	joinData := ContactToByteAray(*me)
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
+	if err != nil {
+		fmt.Println("SEND ERROR: 1")
+		fmt.Println(err)
+	}
+	// Starts up a UDP-connection to the resolved UDP-address 
+	c, err := net.DialUDP("udp4",nil, udpEndPoint)
+	if err != nil {
+		fmt.Println("SEND ERROR: 2")
+		fmt.Println(err)
+	}
+	joinMessage := CreateProtocol("NODE_JOIN", nil, "", joinData, "NODE_JOIN_SENT")
+	defer c.Close()
+	_, e := c.Write(joinMessage)
+	if e != nil {
+		fmt.Println("SEND ERROR: 3")
+		fmt.Println(err)
+	}
+	responseBuffer := make([]byte, 8192)
+	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
+	receivedJoin := Protocol{}
+	if err != nil {
+		fmt.Println("SEND ERROR: 4")
+		fmt.Println(err)
+		return nil
+	}else{
+		json.Unmarshal(responseBuffer[:size], &receivedJoin)
+		responseProtocol := network.DecodeRPC(&receivedJoin, senderAddress, c)
+		contactInformation := Contact{}
+		json.Unmarshal(responseProtocol.Data[:len(responseProtocol.Data)], &contactInformation)
+		return contactInformation
+	}
+}
+
 func (network *Network) SendFindDataMessage(hash string) {
 	// TODO
 }
@@ -144,9 +178,11 @@ func (network *Network) DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, co
 		return network.PingHandler(prot, senderAddress, connection)
 	}else if(prot.Rpc == "NODE_LOOKUP"){
 		return network.LookupHandler(prot, senderAddress, connection)
+	}else if(prot.Rpc == "NODE_JOIN"){
+		return network.JoinHandler(prot, senderAddress, connection)
 	}else if(prot.Rpc == "NODE_VALUE"){
 		return nil
-	}else if(prot.Rpc == "STORE"){
+	}else if(prot.Rpc == "NODE_STORE"){
 		return nil
 	}else{
 		fmt.Println("ERROR. RPC TYPE COULD NOT BE FOUND")
@@ -154,8 +190,35 @@ func (network *Network) DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, co
 	}
 }
 
+func (network *Network) JoinHandler(prot *Protocol, senderAddress *net.UDPAddr, connection *net.UDPConn) *Protocol{
+	fmt.Println("Inside join handler")
+	if(prot.Message == "NODE_JOIN_SENT"){
+		/*
+			Note that the last step (node lookup on itself) is never executed here.
+			Don't know how tho reach the kademlia instance
+		*/
+		fmt.Println("Inside NODE_JOIN_SENT")
+		//Adds contact
+		sendContact := Contact{}
+		json.Unmarshal(prot.Data(:len(prot.Data)), &sendContact)
+		network.routingTable.AddContact(sendContact)
+		//Respond with my own contact
+		meContact := ContactToByteAray(*network.routingTable.me)
+		joinProtocolResponse := CreateProtocol("NODE_JOIN",nil,"",meContact,"NODE_JOIN_RESPONSE")
+		_, e := connection.WriteToUDP(joinProtocolResponse, responseAddr)
+		if e != nil{
+			fmt.Println("JoinHandler ERROR")
+			fmt.Println(e)
+		}
+		return prot
+	}else if(prot.message == "NODE_JOIN_RESPONSE"){
+		fmt.Println("Inside NODE_JOIN_RESPONSE")
+		return prot
+	}
+}
+
 func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
-	fmt.Println("Inside handler")
+	fmt.Println("Inside lookup handler")
 	if(prot.Message == "NODE_LOOKUP_SENT"){
 		fmt.Println("Inside NODE_LOOKUP_SENT")
 		targetContact := Contact{}
