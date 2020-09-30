@@ -40,7 +40,13 @@ func HandleInput(s []string, network *Network, kad *Kademlia) {
 			kad.routingTable.AddContact(contact)
 			kad.LookupContact(&contact)
 		}else if s[1] == "join"{
-
+		/*
+			1.	Ip address supplied to the node we are joining.
+			2.	Random id is supplied to this node.   
+			3.	K-bucket is initialised with the node that we first know, collect information about this node. 
+			4.	Lookup on itself to gain close nodes and the routing table is then updated in this function. 
+			5.	Done!
+		*/
 		}else{
 			fmt.Println("Incorrect command!")
 		}
