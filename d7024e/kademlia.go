@@ -1,6 +1,12 @@
 package d7024e
 
+<<<<<<< HEAD
 
+=======
+import (
+	"fmt"
+)
+>>>>>>> 05d63cfa74dfa44783019d4c691272000ec6b4cd
 
 type Kademlia struct {
 	routingTable *RoutingTable
@@ -9,11 +15,23 @@ type Kademlia struct {
 	// It also has information about the bucket and holds information about contacts that this node knows are in the network.
 }
 
+<<<<<<< HEAD
 const alpha = 3
 
 func (kademlia *Kademlia) LookupContact(target *Contact) {
 	closestContacts := kademlia.routingTable.FindClosestContacts(target.ID, alpha) // 3 should be the size of the bucket size or alpha? 
 	kademlia.PerformQuery(closestContacts, target)
+=======
+func (kademlia *Kademlia) LookupContact(target *Contact) {
+	closestContacts := kademlia.routingTable.FindClosestContacts(target.ID, 3) // 3 should be the size of the bucket size or alpha? 
+	fmt.Println(len(closestContacts))
+	for _, c:= range closestContacts{
+		go func(){
+			reqClosest := kademlia.network.SendFindContactMessage(&c, target)
+			fmt.Println(reqClosest);
+		}()
+	}
+>>>>>>> 05d63cfa74dfa44783019d4c691272000ec6b4cd
 	// TODO (Node look up (Node Join))
 	//	1. 	Async calls (Alpha decides how many?) to search for the contact in the 
 	//		network (Using network.sendFindContactMessage).
