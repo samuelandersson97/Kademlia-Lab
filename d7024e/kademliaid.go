@@ -25,8 +25,9 @@ func NewKademliaID(data string) *KademliaID {
 
 // NewRandomKademliaID returns a new instance of a random KademliaID,
 // change this to a better version if you like
-func NewRandomKademliaID() *KademliaID {
+func NewRandomKademliaID(s int64) *KademliaID {
 	newKademliaID := KademliaID{}
+	rand.Seed(s)
 	for i := 0; i < IDLength; i++ {
 		newKademliaID[i] = uint8(rand.Intn(256))
 	}
