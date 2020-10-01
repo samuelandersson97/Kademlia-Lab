@@ -34,16 +34,18 @@ func (kademlia *Kademlia) Store(data []byte) {
 func (kademlia *Kademlia) NodeJoin(address string) {
 	contactToAdd := kademlia.network.SendNodeJoinMessage(address, kademlia.network.routingTable.me)
 	kademlia.network.routingTable.AddContact(contactToAdd)
+	kademlia.LookupContact(&kademlia.network.routingTable.me)
 	//Add node lookup with this node as the target (Then the node should get an updated routing-table)
 	
-	/* // Comment back in to check for bucket elements
+	// Comment back in to check for bucket elements
+	/*
 	for i := 0; i < 160 ; i++ {
 		if(kademlia.network.routingTable.buckets[i].Len() > 0){
 			fmt.Println(kademlia.network.routingTable.buckets[i].list.Front())
 		}
 		
-	}*/
-	
+	}
+	*/
 }
 
 func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact) {
@@ -107,7 +109,7 @@ func (kademlia *Kademlia)SortListBasedOnID(contacts []Contact, target *Contact) 
 		if err != "" {
 			fmt.Println(err)
 		}else{
-			newList[i] = contact
+			newList = append(newList,contact)
 			contacts = DeleteFromContactList(contacts, index)
 		}
 		

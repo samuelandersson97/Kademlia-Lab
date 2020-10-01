@@ -32,13 +32,15 @@ func ScanInput(kad *Kademlia) {
 func HandleInput(s []string,  kad *Kademlia) {
 	operation := s[0]
 	if operation == "ping"{
-		contact := NewContact(NewRandomKademliaID(), s[1])
-		kad.network.SendPingMessage(&contact)
+		//	Collect the contact that has been alive the longest.
+
+		//	contact := NewContact(NewRandomKademliaID(), s[1])
+		// 	kad.network.SendPingMessage(&contact)
 	}else if operation == "node"{
 		if s[1] == "lookup"{
-			contact := NewContact(NewRandomKademliaID(), s[2])
-			kad.network.routingTable.AddContact(contact)
-			kad.LookupContact(&contact)
+			contactNoIp := NewContact(NewKademliaID(s[2]), "") //Retrieves the wron id
+			kad.network.routingTable.AddContact(contactNoIp)
+			kad.LookupContact(&contactNoIp)
 		}else if s[1] == "join"{
 			kad.NodeJoin(s[2])
 		/*

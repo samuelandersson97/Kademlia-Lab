@@ -198,7 +198,18 @@ func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 		//Adds contact
 		sendContact := Contact{}
 		json.Unmarshal(prot.Data[:len(prot.Data)], &sendContact)
-		network.routingTable.AddContact(sendContact)
+		network.routingTable.AddContact(sendContact) 
+
+		fmt.Println(sendContact.ID)
+
+		
+		for i := 0; i < 160 ; i++ {
+			if(network.routingTable.buckets[i].Len() > 0){
+				fmt.Println(network.routingTable.buckets[i].list.Front())
+			}
+			
+		}
+		
 		//Respond with my own contact
 		meContact := ContactToByteArray(&network.routingTable.me)
 		joinProtocolResponse := CreateProtocol("NODE_JOIN",nil,"",meContact,"NODE_JOIN_RESPONSE")
