@@ -1,9 +1,9 @@
 package d7024e
-
+/*
 import (
 	"fmt"
 )
-	
+*/	
 
 type Kademlia struct {
 	network *Network
@@ -68,7 +68,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact) {
 			kademlia.PerformQuery(sortedReturnContacts, target)
 		}
 	}else{
-		fmt.Println("Error: No contacts!")
+
 	}
 	
 }
@@ -102,7 +102,7 @@ func (kademlia *Kademlia)FindClosestDist(contacts []Contact, target *Contact) (i
 		}
 		return index,contact,""
 	}
-	return 0, kademlia.network.routingTable.me, "Error: No contacts!"
+	return 0, kademlia.network.routingTable.me, "Warning: Few contacts!"
 	
 }
 
@@ -111,7 +111,7 @@ func (kademlia *Kademlia)SortListBasedOnID(contacts []Contact, target *Contact) 
 	for i := 0; i <= alpha; i++{
 		index, contact, err := kademlia.FindClosestDist(contacts, target)
 		if err != "" {
-			fmt.Println(err)
+			
 		}else{
 			newList = append(newList, contact)
 			contacts = DeleteFromContactList(contacts, index)
