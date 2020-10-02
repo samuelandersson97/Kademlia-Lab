@@ -33,9 +33,8 @@ func HandleInput(s []string,  kad *Kademlia) {
 	operation := s[0]
 	if operation == "ping"{
 		//	Collect the contact that has been alive the longest.
-
-		//	contact := NewContact(NewRandomKademliaID(), s[1])
-		// 	kad.network.SendPingMessage(&contact)
+			contact := NewContact(NewRandomKademliaID(), s[1])
+			kad.network.SendPingMessage(&contact)
 	}else if operation == "node"{
 		if s[1] == "lookup"{
 			contactNoIp := NewContact(NewKademliaID(s[2]), "") //Retrieves the wron id

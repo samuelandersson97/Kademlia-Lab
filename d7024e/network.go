@@ -194,7 +194,6 @@ func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 	fmt.Println("Inside join handler")
 	if(prot.Message == "NODE_JOIN_SENT"){
 
-		fmt.Println("Inside NODE_JOIN_SENT")
 		//Adds contact
 		sendContact := Contact{}
 		json.Unmarshal(prot.Data[:len(prot.Data)], &sendContact)
@@ -220,16 +219,13 @@ func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 		}
 		return prot
 	}else if(prot.Message == "NODE_JOIN_RESPONSE"){
-		fmt.Println("Inside NODE_JOIN_RESPONSE")
 		return prot
 	}
 	return nil
 }
 
 func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
-	fmt.Println("Inside lookup handler")
 	if(prot.Message == "NODE_LOOKUP_SENT"){
-		fmt.Println("Inside NODE_LOOKUP_SENT")
 		targetContact := Contact{}
 		json.Unmarshal(prot.Data[:len(prot.Data)], &targetContact)
 		closestContactsArray := network.routingTable.FindClosestContacts(targetContact.ID, 3)
@@ -242,7 +238,6 @@ func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr,
 		}
 		return prot
 	}else if(prot.Message == "NODE_LOOKUP_RESPONSE"){
-		fmt.Println("Inside NODE_LOOKUP_RESPONSE")
 		return prot
 	}
 	return nil

@@ -3,17 +3,20 @@ package main
 import (
 	"d7024e"
 	"fmt"
-	"time"
+	
 )
 /*
 	Create a new instance of the kademlia struct.
 	Needs a routing table and the 'me contact'
+
+
+	Check if this node is start node, give the node an id in that case.
+	Otherwise Id is assigned during join sequence. 
 */
 
 func main() {
 	myIP := d7024e.GetOutboundIP()
-	randId := d7024e.NewRandomKademliaID(time.Now().UnixNano())
-	fmt.Println(randId.String())
+	randId := d7024e.NewRandomKademliaID()
 	me := d7024e.NewContact(randId,myIP)
 	rt := d7024e.NewRoutingTable(me)
 	network := d7024e.InitNetwork(rt)

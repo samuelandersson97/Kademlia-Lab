@@ -3,6 +3,7 @@ package d7024e
 import (
 	"encoding/hex"
 	"math/rand"
+	"time"
 )
 
 // the static number of bytes in a KademliaID
@@ -25,8 +26,9 @@ func NewKademliaID(data string) *KademliaID {
 
 // NewRandomKademliaID returns a new instance of a random KademliaID,
 // change this to a better version if you like
-func NewRandomKademliaID(s int64) *KademliaID {
+func NewRandomKademliaID() *KademliaID {
 	newKademliaID := KademliaID{}
+	s := time.Now().UnixNano()
 	rand.Seed(s)
 	for i := 0; i < IDLength; i++ {
 		newKademliaID[i] = uint8(rand.Intn(256))
