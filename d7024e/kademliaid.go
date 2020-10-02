@@ -28,8 +28,7 @@ func NewKademliaID(data string) *KademliaID {
 // change this to a better version if you like
 func NewRandomKademliaID() *KademliaID {
 	newKademliaID := KademliaID{}
-	s := time.Now().UnixNano()
-	rand.Seed(s)
+	rand.Seed(time.Now().UnixNano())
 	for i := 0; i < IDLength; i++ {
 		newKademliaID[i] = uint8(rand.Intn(256))
 	}

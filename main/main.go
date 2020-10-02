@@ -2,8 +2,6 @@ package main
 
 import (
 	"d7024e"
-	"fmt"
-	
 )
 /*
 	Create a new instance of the kademlia struct.
@@ -16,8 +14,7 @@ import (
 
 func main() {
 	myIP := d7024e.GetOutboundIP()
-	randId := d7024e.NewRandomKademliaID()
-	me := d7024e.NewContact(randId,myIP)
+	me := d7024e.NewContact(d7024e.NewRandomKademliaID(),myIP)
 	rt := d7024e.NewRoutingTable(me)
 	network := d7024e.InitNetwork(rt)
 	kad := d7024e.InitKademlia(network)

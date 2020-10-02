@@ -7,20 +7,16 @@ import(
 	"encoding/json"
 )
 
-/*
-	Here we should have a pointer to a Kademlia "object". The Kademlia object itself contains a RoutingTable.
-*/
-
 type Network struct {
 	routingTable *RoutingTable
 }
 
 type Protocol struct {
-	Rpc string
-	Contacts []Contact
-	Hash string
-	Data []byte
-	Message string
+	Rpc string			//rpc-type (node join, node lookup, ping etc...)
+	Contacts []Contact  //only used for return from node lookup
+	Hash string			//used for get
+	Data []byte			//sending data needed for given rpc
+	Message string		//used for sent/recieve of the rpc
 }
 
 /*
@@ -28,17 +24,14 @@ type Protocol struct {
 */
 func (network *Network) Listen(ip string, port int) {
 	adrPort := ip+":"+strconv.Itoa(port)
-	fmt.Println("Listening at "+adrPort+ ".....")
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",adrPort)
 	if err != nil {
-		fmt.Println("LISTEN ERROR: 1")
 		fmt.Println(err)
 	}
 	//Listens for packets on the (ONLY!!) LOCAL network. 'udp4' indicates that only IPv4-addresses are taken into account when it comes to listening for packets, returns a connection
 	c, err := net.ListenUDP("udp4", udpEndPoint)
 	if err != nil {
-		fmt.Println("LISTEN ERROR: 2")
 		fmt.Println(err)
 	}
 	defer c.Close()
@@ -49,7 +42,6 @@ func (network *Network) Listen(ip string, port int) {
 		//Adds the message from the UDP-channel in the message-buffer. Returns the size of the message and the adress of the sender
 		size, senderAddress, err := c.ReadFromUDP(messageBuffer)
 		if err != nil {
-			fmt.Println("LISTEN ERROR: 3")
 			fmt.Println(err)
 		}
 		json.Unmarshal(messageBuffer[:size], &responseProtocol)
@@ -57,35 +49,27 @@ func (network *Network) Listen(ip string, port int) {
 	}
 }
 
-/*
-	Clean up the trace prints, send useful messages instead of this (should be wrapped in our struct mentioned above)
-*/
-
 func (network *Network) SendPingMessage(contact *Contact) {
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
 	if err != nil {
-		fmt.Println("SEND ERROR: 1")
 		fmt.Println(err)
 	}
 	// Starts up a UDP-connection to the resolved UDP-address 
 	c, err := net.DialUDP("udp4",nil, udpEndPoint)
 	if err != nil {
-		fmt.Println("SEND ERROR: 2")
 		fmt.Println(err)
 	}
 	pingMessage := CreateProtocol("PING", nil, "", nil, "PING_SENT")
 	defer c.Close()
 	_, e := c.Write(pingMessage)
 	if e != nil {
-		fmt.Println("SEND ERROR: 3")
 		fmt.Println(err)
 	}
 	responseBuffer := make([]byte, 8192)
 	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
 	receivedPing := Protocol{}
 	if err != nil {
-		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
 	}else{
 		json.Unmarshal(responseBuffer[:size], &receivedPing)
@@ -99,27 +83,23 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
 	if err != nil {
-		fmt.Println("SEND ERROR: 1")
 		fmt.Println(err)
 	}
 	// Starts up a UDP-connection to the resolved UDP-address 
 	c, err := net.DialUDP("udp4",nil, udpEndPoint)
 	if err != nil {
-		fmt.Println("SEND ERROR: 2")
 		fmt.Println(err)
 	}
 	lookupMessage := CreateProtocol("NODE_LOOKUP", nil, "", targetArr, "NODE_LOOKUP_SENT")
 	defer c.Close()
 	_, e := c.Write(lookupMessage)
 	if e != nil {
-		fmt.Println("SEND ERROR: 3")
 		fmt.Println(err)
 	}
 	responseBuffer := make([]byte, 8192)
 	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
 	receivedLookup := Protocol{}
 	if err != nil {
-		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
 		return nil
 	}else{
@@ -133,27 +113,23 @@ func (network *Network) SendNodeJoinMessage(address string, me Contact) Contact 
 	joinData := ContactToByteArray(&me)
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",address+":1111")
 	if err != nil {
-		fmt.Println("SEND ERROR: 1")
 		fmt.Println(err)
 	}
 	// Starts up a UDP-connection to the resolved UDP-address 
 	c, err := net.DialUDP("udp4",nil, udpEndPoint)
 	if err != nil {
-		fmt.Println("SEND ERROR: 2")
 		fmt.Println(err)
 	}
 	joinMessage := CreateProtocol("NODE_JOIN", nil, "", joinData, "NODE_JOIN_SENT")
 	defer c.Close()
 	_, e := c.Write(joinMessage)
 	if e != nil {
-		fmt.Println("SEND ERROR: 3")
 		fmt.Println(err)
 	}
 	responseBuffer := make([]byte, 8192)
 	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
 	receivedJoin := Protocol{}
 	if err != nil {
-		fmt.Println("SEND ERROR: 4")
 		fmt.Println(err)
 		
 	}
@@ -191,9 +167,7 @@ func (network *Network) DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, co
 }
 
 func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
-	fmt.Println("Inside join handler")
 	if(prot.Message == "NODE_JOIN_SENT"){
-
 		//Adds contact
 		sendContact := Contact{}
 		json.Unmarshal(prot.Data[:len(prot.Data)], &sendContact)
@@ -201,7 +175,7 @@ func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 
 		fmt.Println(sendContact.ID)
 
-		
+		//ONLY USED FOR TESTING. PRINTS THE CONTENT OF THE ROUTINGTABLE
 		for i := 0; i < 160 ; i++ {
 			if(network.routingTable.buckets[i].Len() > 0){
 				fmt.Println(network.routingTable.buckets[i].list.Front())
@@ -214,7 +188,6 @@ func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 		joinProtocolResponse := CreateProtocol("NODE_JOIN",nil,"",meContact,"NODE_JOIN_RESPONSE")
 		_, e := connection.WriteToUDP(joinProtocolResponse, responseAddr)
 		if e != nil{
-			fmt.Println("JoinHandler ERROR")
 			fmt.Println(e)
 		}
 		return prot
@@ -229,11 +202,12 @@ func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr,
 		targetContact := Contact{}
 		json.Unmarshal(prot.Data[:len(prot.Data)], &targetContact)
 		closestContactsArray := network.routingTable.FindClosestContacts(targetContact.ID, 3)
-		fmt.Println(len(closestContactsArray))
+		for i,c := range closestContactsArray{
+			fmt.Println("This contact was one of the closest: "+c.Address)
+		}
 		lookupProtocolResponse := CreateProtocol("NODE_LOOKUP",closestContactsArray,"",prot.Data,"NODE_LOOKUP_RESPONSE")
 		_, e := connection.WriteToUDP(lookupProtocolResponse, responseAddr)
 		if e != nil{
-			fmt.Println("LookupHandler ERROR")
 			fmt.Println(e)
 		}
 		return prot
@@ -253,7 +227,6 @@ func (network *Network) PingHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 		pingResponseRPC := CreateProtocol("PING",nil,"",nil,"PING_RESPONSE")
 		_, e := connection.WriteToUDP(pingResponseRPC, responseAddr)
 		if e != nil {
-			fmt.Println("PingHandler ERROR")
 			fmt.Println(e)
 		}
 		return prot
@@ -268,7 +241,6 @@ func ContactToByteArray(contact *Contact) []byte {
 	contactByteArray, err := json.Marshal(contact)
 	if err != nil{
 		fmt.Println(err)
-		fmt.Println("FAIL IN CONVERSION")
 		return nil
 	}
 	return contactByteArray
@@ -288,10 +260,6 @@ func CreateProtocol(rpcToSend string, contactsArr []Contact, hashToSend string, 
 	}
 	return prot
 }
-
-/*
-	Change the InitNetwork to the newly defined struct. Remove contact and add routingtable
-*/
 
 func InitNetwork(rt *RoutingTable) *Network{
 	network := &Network{}

@@ -35,9 +35,17 @@ func HandleInput(s []string,  kad *Kademlia) {
 		//	Collect the contact that has been alive the longest.
 			contact := NewContact(NewRandomKademliaID(), s[1])
 			kad.network.SendPingMessage(&contact)
+		//	Should only(?) be used when the bucket is full to check if the front-contact is alive
+		//  Fix function in kademlia that handles the retrieval of this contact and the ping-call
+		//  The ping itself works. However it is not used anywhere yet
+		//  Needs to have some time out function. Check net package documentation for more info
+
+		//	contact := NewContact(NewRandomKademliaID(), s[1])
+		// 	kad.network.SendPingMessage(&contact)
 	}else if operation == "node"{
 		if s[1] == "lookup"{
-			contactNoIp := NewContact(NewKademliaID(s[2]), "") //Retrieves the wron id
+			//Retrieves the wrong id. This is because decoding is done on the input-string in NewKademliaID
+			contactNoIp := NewContact(NewKademliaID(s[2]), "")
 			kad.network.routingTable.AddContact(contactNoIp)
 			kad.LookupContact(&contactNoIp)
 		}else if s[1] == "join"{
