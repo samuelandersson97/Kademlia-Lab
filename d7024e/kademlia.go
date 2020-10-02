@@ -14,8 +14,24 @@ type Kademlia struct {
 const alpha = 3
 
 func (kademlia *Kademlia) LookupContact(target *Contact) {
+	/*	--- OLD ----
 	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
 	kademlia.PerformQuery(closestContacts, target)
+		---- OLD ----*/
+	
+	// --- NEW ---
+	var visitedList []string{}
+	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
+	for _, c := range closestContacts{
+		visitedList = append(visitedList, c.Address)
+	}
+	visitedList = append(visitedList, kademlia.routingTable.me.Address) //adds node itself to the visitedList in order to prevent it lookuping itself
+	if(len(closestContacts)>0){ //prevent out of bounds on closest so far
+		closestFromMe := closestContacts[0].ID.CalcDistance(target.ID)
+		kademlia.PerformQuery(closestContacts, target, visitedList, &closestFromMe)
+	}
+	// --- NEW ---
+
 	// TODO (Node look up (Node Join))
 	//	1. 	Async calls (Alpha decides how many?) to search for the contact in the 
 	//		network (Using network.sendFindContactMessage).
@@ -51,14 +67,25 @@ func (kademlia *Kademlia) NodeJoin(address string) {
 	}
 	*/
 }
+/*
+	Performs the "iteration process" where the alpha-closest from the parent nodes get queried with their closest contacts
+	For each of the alpha contacts, a thread starts and queries the contact for its alpha-closest. The result will be stored in a.
+	The result-array (returnContacts) of each querie will be alpha*alpha in size and will then be used/manipulated to perform further queries.
 
-func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact) {
+
+	INITIATING NODE HAS FOUND K CONTACTS ALIVE
+*/
+func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visitedIPs []string, closestSoFar *KademliaID) {
 	var returnContacts []Contact
 	var a []Contact
+	var queriedClosest *KademliaID
+	
+	/*	---- OLD ----
 	for _, c := range contacts{
 		a = <- kademlia.requestFromClosest(&c, target)
 		returnContacts=append(returnContacts,a...)
 	}
+
 	for _, co := range returnContacts{
 		kademlia.network.routingTable.AddContact(co)
 	}
@@ -66,10 +93,58 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact) {
 	if(len(sortedReturnContacts) > 0 && len(contacts) > 0){
 		if(contacts[0].ID.Less(sortedReturnContacts[0].ID)){
 			kademlia.PerformQuery(sortedReturnContacts, target)
+		}else{
+
+		}
+	}else{
+		fmt.Println("Error: No contacts!")
+	}	---- OLD ----*/
+	
+	//	---- NEW ----
+	
+	/*
+		Start off by deleting the already visited nodes from the contact list (the list we will query from)
+	*/
+	for index, c := range contacts{
+		_, found = Find(visitedIPs, c.Address)
+		if found {
+			DeleteFromContactList(contacts, index)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
+		}
+	}
+
+	srtContact := kademlia.SortListBasedOnID(contacts, target)	//Needs to be sorted again after deletion. Stupid delete implementation.
+	
+	var count = 0 						//counter to prevent more than alpha concurrent calls
+	for i := 0; i<len(srtContact); i++{	//loop on srtContact length in order to prevent out of bounds exception
+		if count < alpha{
+			a = <- kademlia.requestFromClosest(&srtContact[i], target)
+			visitedIPs = append(visitedIPs, &srtContact[i].Address)	//add the queried node's ip to the array of visited nodes ip's
+			returnContacts = append(returnContacts,a...)
+		}
+		count = count+1	
+	}
+
+	for _, co := range returnContacts{
+		kademlia.network.routingTable.AddContact(co)
+	}
+	sortedReturnContacts := kademlia.SortListBasedOnID(returnContacts, target)
+	if(len(sortedReturnContacts>0)){ //prevent index out of bounds
+		queriedClosest := sortedReturnContacts[0].ID.CalcDistance(target.ID)
+	}
+	if(len(sortedReturnContacts) > 0 && len(contacts) > 0){
+		if(closestSoFar<queriedClosest){
+			//Made no progress in regards of distance this iteration
+			// WHAT SHOULD BE THE DIFFERENCE???????????????????????????
+			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, closestSoFar)
+		}else{
+			//Made progress in regards of distance this iteration
+			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, queriedClosest)
 		}
 	}else{
 
 	}
+
+	//	---- NEW ----
 	
 }
 
@@ -87,6 +162,11 @@ func (kademlia *Kademlia) requestFromClosest(contact *Contact, target *Contact) 
 	}()
 	return r
 }
+
+/*
+	Finds the closest distance from the list of contacts with respect to the target
+	Returns the index in the array of that contact, the contact itself
+*/
 
 func (kademlia *Kademlia)FindClosestDist(contacts []Contact, target *Contact) (int,Contact, string){
 	if len(contacts) > 0 {
@@ -106,9 +186,14 @@ func (kademlia *Kademlia)FindClosestDist(contacts []Contact, target *Contact) (i
 	
 }
 
+/*
+	Sorts a list based on the distance. Uses FindClosestDist n-times (size of list) and appends that result to the "result list"
+	The closest-distance-contact get removed from the searched list for each time, hence the sort will work
+*/
+
 func (kademlia *Kademlia)SortListBasedOnID(contacts []Contact, target *Contact) []Contact{
 	var newList []Contact
-	for i := 0; i <= alpha; i++{
+	for i := 0; i <= alpha; i++{	//Loops through index 0,1,2,3? Although alpha=3 implies that there should only be tree elements in the list
 		index, contact, err := kademlia.FindClosestDist(contacts, target)
 		if err != "" {
 			
@@ -121,11 +206,25 @@ func (kademlia *Kademlia)SortListBasedOnID(contacts []Contact, target *Contact) 
 	return newList
 }
 
+/*
+	Deletes an element at index i from a list
+*/
 func DeleteFromContactList(contacts []Contact, i int) []Contact{
 	// Remove the element at index i from contacts.
 	contacts[i] = contacts[len(contacts)-1] // Copy last element to index i.
 	contacts = contacts[:len(contacts)-1]   // Truncate slice.
 	return contacts
+}
+
+// Find takes a slice and looks for an element in it. If found it will
+// return it's key, otherwise it will return -1 and a bool of false.
+func Find(slice []string, val string) (int, bool) {
+    for i, item := range slice {
+        if item == val {
+            return i, true
+        }
+    }
+    return -1, false
 }
 
 // Creates a new kademlia struct
