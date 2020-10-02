@@ -20,15 +20,15 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 		---- OLD ----*/
 	
 	// --- NEW ---
-	var visitedList []string{}
+	var visitedList []string
 	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
 	for _, c := range closestContacts{
 		visitedList = append(visitedList, c.Address)
 	}
-	visitedList = append(visitedList, kademlia.routingTable.me.Address) //adds node itself to the visitedList in order to prevent it lookuping itself
+	visitedList = append(visitedList, kademlia.network.routingTable.me.Address) //adds node itself to the visitedList in order to prevent it lookuping itself
 	if(len(closestContacts)>0){ //prevent out of bounds on closest so far
 		closestFromMe := closestContacts[0].ID.CalcDistance(target.ID)
-		kademlia.PerformQuery(closestContacts, target, visitedList, &closestFromMe)
+		kademlia.PerformQuery(closestContacts, target, visitedList, closestFromMe)
 	}
 	// --- NEW ---
 
@@ -106,7 +106,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		Start off by deleting the already visited nodes from the contact list (the list we will query from)
 	*/
 	for index, c := range contacts{
-		_, found = Find(visitedIPs, c.Address)
+		_, found := Find(visitedIPs, c.Address)
 		if found {
 			DeleteFromContactList(contacts, index)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
 		}
@@ -118,7 +118,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	for i := 0; i<len(srtContact); i++{	//loop on srtContact length in order to prevent out of bounds exception
 		if count < alpha{
 			a = <- kademlia.requestFromClosest(&srtContact[i], target)
-			visitedIPs = append(visitedIPs, &srtContact[i].Address)	//add the queried node's ip to the array of visited nodes ip's
+			visitedIPs = append(visitedIPs, srtContact[i].Address)	//add the queried node's ip to the array of visited nodes ip's
 			returnContacts = append(returnContacts,a...)
 		}
 		count = count+1	
@@ -128,11 +128,9 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		kademlia.network.routingTable.AddContact(co)
 	}
 	sortedReturnContacts := kademlia.SortListBasedOnID(returnContacts, target)
-	if(len(sortedReturnContacts>0)){ //prevent index out of bounds
-		queriedClosest := sortedReturnContacts[0].ID.CalcDistance(target.ID)
-	}
-	if(len(sortedReturnContacts) > 0 && len(contacts) > 0){
-		if(closestSoFar<queriedClosest){
+	if(len(sortedReturnContacts)>0){ //prevent index out of bounds
+		queriedClosest = sortedReturnContacts[0].ID.CalcDistance(target.ID)
+		if(closestSoFar.Less(queriedClosest) && len(contacts) > 0){
 			//Made no progress in regards of distance this iteration
 			// WHAT SHOULD BE THE DIFFERENCE???????????????????????????
 			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, closestSoFar)
