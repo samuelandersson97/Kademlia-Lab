@@ -14,7 +14,7 @@ type Kademlia struct {
 const alpha = 3
 
 func (kademlia *Kademlia) LookupContact(target *Contact) {
-	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha) // 3 should be the size of the bucket size or alpha? 
+	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
 	kademlia.PerformQuery(closestContacts, target)
 	// TODO (Node look up (Node Join))
 	//	1. 	Async calls (Alpha decides how many?) to search for the contact in the 
@@ -24,11 +24,15 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 }
 
 func (kademlia *Kademlia) LookupData(hash string) {
-	// TODO
+	/*
+		Should use LookupContact in order to find several nodes and check each of the nodes if they got any data "attached" to the given hash
+	*/
 }
 
 func (kademlia *Kademlia) Store(data []byte) {
-	// TODO
+	/*
+		Should just store the data on the node in a hashtable
+	*/
 }
 
 func (kademlia *Kademlia) NodeJoin(address string) {
