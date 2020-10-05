@@ -19,11 +19,13 @@ func (kademlia *Kademlia) LookupContact(target *Contact) {
 		---- OLD ----*/
 	
 	// --- NEW ---
+	
 	var visitedList []string
 	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
+	/*
 	for _, c := range closestContacts{
 		visitedList = append(visitedList, c.Address)
-	}
+	}*/
 	visitedList = append(visitedList, kademlia.network.routingTable.me.Address) //adds node itself to the visitedList in order to prevent it lookuping itself
 	if(len(closestContacts)>0){ //prevent out of bounds on closest so far
 		closestFromMe := closestContacts[0].ID.CalcDistance(target.ID)
@@ -107,8 +109,13 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	for index, c := range contacts{
 		_, found := Find(visitedIPs, c.Address)
 		if found {
-			contacts = DeleteFromContactList(contacts, index)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
+			contacts = DeleteByAddress(c.Address, contacts)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
 		}
+	}
+
+	//PRINT ONLY!!
+	for _, c := range contacts{
+		fmt.Println("CONTACT TO REQUEST FROM: "+contacts.Address)
 	}
 
 	srtContact := kademlia.SortListBasedOnID(contacts, target)	//Needs to be sorted again after deletion. Stupid delete implementation.
@@ -116,13 +123,24 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	var count = 0 						//counter to prevent more than alpha concurrent calls
 	for i := 0; i<len(srtContact); i++{	//loop on srtContact length in order to prevent out of bounds exception
 		if count < alpha{
-			fmt.Println(srtContact[i].String())
+			fmt.Println("QUERIES THIS CONTACT FOR NODES: "+srtContact[i].String())
 			a = <- kademlia.requestFromClosest(&srtContact[i], target)
 			visitedIPs = append(visitedIPs, srtContact[i].Address)	//add the queried node's ip to the array of visited nodes ip's
 			returnContacts = append(returnContacts,a...)
 		}
 		count = count+1	
 	}
+
+	//PRINT ONLY!!
+	for _, ip := range visitedIPs{
+		fmt.Println("THESE CONTACT IP'S HAVE BEEN VISITED: "+ip)
+	}
+	var contSize := 0
+	for _, b := range kademlia.network.routingTable.buckets{
+		contSize = contSize + b.Len()
+	}
+	fmt.Println("NUMBER OF CONTACTS IN ROUTING TABLE: "+ contSize)
+	//PRINT ONLY!! ^^^
 
 	for _, co := range returnContacts{
 		kademlia.network.routingTable.AddContact(co)
@@ -215,10 +233,10 @@ func DeleteFromContactList(contacts []Contact, i int) []Contact{
 }
 
 func DeleteByAddress(a string, contacts []Contact) []Contact{
-	var con []Contact{}
+	var con []Contact
 	for i, c := range contacts{
 		if c.Address == a{
-			con := DeleteFromContactList(contacts, i)
+			con = DeleteFromContactList(contacts, i)
 			break
 		}
 	}
