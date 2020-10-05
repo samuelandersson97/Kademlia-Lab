@@ -168,10 +168,9 @@ func (network *Network) DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, co
 
 func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
 	if(prot.Message == "NODE_JOIN_SENT"){
-		//Adds contact
 		sendContact := Contact{}
 		json.Unmarshal(prot.Data[:len(prot.Data)], &sendContact)
-		network.routingTable.AddContact(sendContact) 
+		
 
 		fmt.Println(sendContact.ID)
 
@@ -190,6 +189,7 @@ func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 		if e != nil{
 			fmt.Println(e)
 		}
+		network.routingTable.AddContact(sendContact) 
 		return prot
 	}else if(prot.Message == "NODE_JOIN_RESPONSE"){
 		return prot
@@ -277,3 +277,6 @@ func GetOutboundIP() string {
     localAddr := conn.LocalAddr().(*net.UDPAddr)
     return localAddr.IP.String()
 }
+
+
+// Add to routing table 

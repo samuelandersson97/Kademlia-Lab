@@ -1,6 +1,7 @@
 package d7024e
 
 import (
+	"strconv"
 	"fmt"
 )	
 
@@ -106,7 +107,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	/*
 		Start off by deleting the already visited nodes from the contact list (the list we will query from)
 	*/
-	for index, c := range contacts{
+	for _, c := range contacts{
 		_, found := Find(visitedIPs, c.Address)
 		if found {
 			contacts = DeleteByAddress(c.Address, contacts)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
@@ -115,7 +116,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 
 	//PRINT ONLY!!
 	for _, c := range contacts{
-		fmt.Println("CONTACT TO REQUEST FROM: "+contacts.Address)
+		fmt.Println("CONTACT TO REQUEST FROM: "+c.Address)
 	}
 
 	srtContact := kademlia.SortListBasedOnID(contacts, target)	//Needs to be sorted again after deletion. Stupid delete implementation.
@@ -130,22 +131,30 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		}
 		count = count+1	
 	}
-
+	for _, co := range returnContacts{
+		if(kademlia.network.routingTable.me.ID.Equals(co.ID)){
+			returnContacts = DeleteByAddress(co.Address, returnContacts)
+		}else{
+			kademlia.network.routingTable.AddContact(co)
+		}
+		
+	}
+	sortedReturnContacts := kademlia.SortListBasedOnID(returnContacts, target)
 	//PRINT ONLY!!
+	for _, c := range sortedReturnContacts{
+		fmt.Println("Returned contact: "+c.Address)
+	}
 	for _, ip := range visitedIPs{
 		fmt.Println("THESE CONTACT IP'S HAVE BEEN VISITED: "+ip)
 	}
-	var contSize := 0
+	var contSize = 0
 	for _, b := range kademlia.network.routingTable.buckets{
 		contSize = contSize + b.Len()
 	}
-	fmt.Println("NUMBER OF CONTACTS IN ROUTING TABLE: "+ contSize)
+	fmt.Println("NUMBER OF CONTACTS IN ROUTING TABLE: "+ strconv.Itoa(contSize))
 	//PRINT ONLY!! ^^^
 
-	for _, co := range returnContacts{
-		kademlia.network.routingTable.AddContact(co)
-	}
-	sortedReturnContacts := kademlia.SortListBasedOnID(returnContacts, target)
+	
 	if(len(sortedReturnContacts)>0){ //prevent index out of bounds
 		queriedClosest = sortedReturnContacts[0].ID.CalcDistance(target.ID)
 		if(closestSoFar.Less(queriedClosest) && len(contacts) > 0){
