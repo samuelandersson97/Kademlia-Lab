@@ -1,9 +1,8 @@
 package d7024e
-/*
+
 import (
 	"fmt"
-)
-*/	
+)	
 
 type Kademlia struct {
 	network *Network
@@ -108,7 +107,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	for index, c := range contacts{
 		_, found := Find(visitedIPs, c.Address)
 		if found {
-			DeleteFromContactList(contacts, index)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
+			contacts = DeleteFromContactList(contacts, index)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
 		}
 	}
 
@@ -117,7 +116,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	var count = 0 						//counter to prevent more than alpha concurrent calls
 	for i := 0; i<len(srtContact); i++{	//loop on srtContact length in order to prevent out of bounds exception
 		if count < alpha{
-			fmt.Println(&srtContact[i].String())
+			fmt.Println(srtContact[i].String())
 			a = <- kademlia.requestFromClosest(&srtContact[i], target)
 			visitedIPs = append(visitedIPs, srtContact[i].Address)	//add the queried node's ip to the array of visited nodes ip's
 			returnContacts = append(returnContacts,a...)
@@ -213,6 +212,17 @@ func DeleteFromContactList(contacts []Contact, i int) []Contact{
 	contacts[i] = contacts[len(contacts)-1] // Copy last element to index i.
 	contacts = contacts[:len(contacts)-1]   // Truncate slice.
 	return contacts
+}
+
+func DeleteByAddress(a string, contacts []Contact) []Contact{
+	var con []Contact{}
+	for i, c := range contacts{
+		if c.Address == a{
+			con := DeleteFromContactList(contacts, i)
+			break
+		}
+	}
+	return con
 }
 
 // Find takes a slice and looks for an element in it. If found it will
