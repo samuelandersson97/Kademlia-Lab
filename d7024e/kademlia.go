@@ -37,7 +37,7 @@ func (kademlia *Kademlia) Store(data []byte) {
 
 func (kademlia *Kademlia) NodeJoin(address string) {
 	contactToAdd := kademlia.network.SendNodeJoinMessage(address, kademlia.network.routingTable.me)
-	kademlia.network.routingTable.AddContact(contactToAdd)
+	kademlia.network.AddContHelper(contactToAdd)
 	kademlia.LookupContact(&kademlia.network.routingTable.me)
 }
 /*
@@ -90,7 +90,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		if(kademlia.network.routingTable.me.ID.Equals(co.ID)){
 			returnContacts = DeleteByAddress(co.Address, returnContacts)
 		}else{
-			kademlia.network.routingTable.AddContact(co)
+			kademlia.network.AddContHelper(co)
 		}
 		
 	}

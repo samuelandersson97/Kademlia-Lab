@@ -4,6 +4,7 @@ import(
 	"net"
 	"strconv"
 	"fmt"
+	"time"
 	"encoding/json"
 )
 
@@ -18,6 +19,8 @@ type Protocol struct {
 	Data []byte			//sending data needed for given rpc
 	Message string		//used for sent/recieve of the rpc
 }
+
+const T_OUT = time.Millisecond*1000.
 
 /*
 	Extract the sent message and create different fucntions that handles different types of messages (PING, FIND_NODE, etc...)
@@ -49,8 +52,9 @@ func (network *Network) Listen(ip string, port int) {
 	}
 }
 
-func (network *Network) SendPingMessage(contact *Contact) {
+func (network *Network) SendPingMessage(contact *Contact) bool {
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
+	fmt.Println("Inside send ping")
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
 	if err != nil {
 		fmt.Println(err)
@@ -61,6 +65,7 @@ func (network *Network) SendPingMessage(contact *Contact) {
 		fmt.Println(err)
 	}
 	pingMessage := CreateProtocol("PING", nil, "", nil, "PING_SENT")
+	c.SetDeadline(time.Now().Add(T_OUT))
 	defer c.Close()
 	_, e := c.Write(pingMessage)
 	if e != nil {
@@ -70,11 +75,15 @@ func (network *Network) SendPingMessage(contact *Contact) {
 	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
 	receivedPing := Protocol{}
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("TIMEOUT")
+		return false
 	}else{
 		json.Unmarshal(responseBuffer[:size], &receivedPing)
 		_ = network.DecodeRPC(&receivedPing, senderAddress, c)
+		return true
 	}
+
+
 	
 }
 
@@ -91,6 +100,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 		fmt.Println(err)
 	}
 	lookupMessage := CreateProtocol("NODE_LOOKUP", nil, "", targetArr, "NODE_LOOKUP_SENT")
+	c.SetDeadline(time.Now().Add(T_OUT))
 	defer c.Close()
 	_, e := c.Write(lookupMessage)
 	if e != nil {
@@ -121,6 +131,7 @@ func (network *Network) SendNodeJoinMessage(address string, me Contact) Contact 
 		fmt.Println(err)
 	}
 	joinMessage := CreateProtocol("NODE_JOIN", nil, "", joinData, "NODE_JOIN_SENT")
+	c.SetDeadline(time.Now().Add(T_OUT))
 	defer c.Close()
 	_, e := c.Write(joinMessage)
 	if e != nil {
@@ -129,13 +140,13 @@ func (network *Network) SendNodeJoinMessage(address string, me Contact) Contact 
 	responseBuffer := make([]byte, 8192)
 	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
 	receivedJoin := Protocol{}
+	contactInformation := Contact{}
 	if err != nil {
 		fmt.Println(err)
-		
+		return contactInformation
 	}
 	json.Unmarshal(responseBuffer[:size], &receivedJoin)
 	responseProtocol := network.DecodeRPC(&receivedJoin, senderAddress, c)
-	contactInformation := Contact{}
 	json.Unmarshal(responseProtocol.Data[:len(responseProtocol.Data)], &contactInformation)
 	return contactInformation
 	
@@ -189,7 +200,7 @@ func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 		if e != nil{
 			fmt.Println(e)
 		}
-		network.routingTable.AddContact(sendContact) 
+		network.AddContHelper(sendContact) 
 		return prot
 	}else if(prot.Message == "NODE_JOIN_RESPONSE"){
 		return prot
@@ -280,3 +291,9 @@ func GetOutboundIP() string {
 
 
 // Add to routing table 
+func (network *Network) AddContHelper(contact Contact){
+	if(network.SendPingMessage(&contact)){
+		network.routingTable.AddContact(contact) 
+	}
+	
+}
