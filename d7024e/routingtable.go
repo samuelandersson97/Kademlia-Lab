@@ -75,6 +75,6 @@ func (routingTable *RoutingTable) CheckIfFull(id *KademliaID) bool {
 	return bucketSize<=size
 }
 
-func (routingTable *RoutingTable) GetBucket(id *KademliaID) &bucket{
+func (routingTable *RoutingTable) GetBucket(id *KademliaID) *bucket{
 	return routingTable.buckets[routingTable.getBucketIndex(id)]
 }

@@ -63,7 +63,7 @@ func (network *Network) SendPingMessage(contact *Contact) bool {
 	if err != nil {
 		fmt.Println(err)
 	}
-	meContact := ContactToByteArray(network.routingTable.me)
+	meContact := ContactToByteArray(&network.routingTable.me)
 	pingMessage := CreateProtocol("PING", nil, "", meContact, "PING_SENT")
 	c.SetDeadline(time.Now().Add(T_OUT))
 	defer c.Close()
@@ -300,8 +300,10 @@ func (network *Network) AddContHelper(contact Contact){
 			network.routingTable.AddContact(contact) 
 		}else{
 			bucket := network.routingTable.GetBucket(contact.ID)
-			if(network.SendPingMessage(bucket.Back())){
-				network.routingTable.AddContact(bucket.Back()) //see AddContact in bucket
+			cont := Contact{}
+			cont = bucket.list.Back().Value.(Contact)
+			if(network.SendPingMessage(&cont)){
+				network.routingTable.AddContact(bucket.list.Back().Value.(Contact)) //see AddContact in bucket
 			}else{
 				network.routingTable.AddContact(contact)
 			}
