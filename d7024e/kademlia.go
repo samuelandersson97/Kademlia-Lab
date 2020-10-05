@@ -117,6 +117,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	var count = 0 						//counter to prevent more than alpha concurrent calls
 	for i := 0; i<len(srtContact); i++{	//loop on srtContact length in order to prevent out of bounds exception
 		if count < alpha{
+			fmt.Println(&srtContact[i].String())
 			a = <- kademlia.requestFromClosest(&srtContact[i], target)
 			visitedIPs = append(visitedIPs, srtContact[i].Address)	//add the queried node's ip to the array of visited nodes ip's
 			returnContacts = append(returnContacts,a...)
