@@ -11,7 +11,7 @@ import (
 	Should be complete
 */
 
-func ScanInput(network *Network, kad *Kademlia) {
+func ScanInput(kad *Kademlia) {
 	reader := bufio.NewReader(os.Stdin)
 	readValue, err := reader.ReadString('\n')
 	inputString := strings.Split(readValue, "\n")
@@ -19,7 +19,7 @@ func ScanInput(network *Network, kad *Kademlia) {
 		fmt.Println(err)
 	}
 	input := strings.Split(inputString[0], " ")
-	HandleInput(input, network, kad)
+	HandleInput(input, kad)
 }
 
 /*
@@ -29,18 +29,34 @@ func ScanInput(network *Network, kad *Kademlia) {
 
 */
 
-func HandleInput(s []string, network *Network, kad *Kademlia) {
+func HandleInput(s []string,  kad *Kademlia) {
 	operation := s[0]
 	if operation == "ping"{
-		contact := NewContact(NewRandomKademliaID(), s[1])
-		network.SendPingMessage(&contact)
+		//	Collect the contact that has been alive the longest.
+			contact := NewContact(NewRandomKademliaID(), s[1])
+			kad.network.SendPingMessage(&contact)
+		//	Should only(?) be used when the bucket is full to check if the front-contact is alive
+		//  Fix function in kademlia that handles the retrieval of this contact and the ping-call
+		//  The ping itself works. However it is not used anywhere yet
+		//  Needs to have some time out function. Check net package documentation for more info
+
+		//	contact := NewContact(NewRandomKademliaID(), s[1])
+		// 	kad.network.SendPingMessage(&contact)
 	}else if operation == "node"{
 		if s[1] == "lookup"{
-			contact := NewContact(NewRandomKademliaID(), s[2])
-			kad.routingTable.AddContact(contact)
-			kad.LookupContact(&contact)
+			//Retrieves the wrong id. This is because decoding is done on the input-string in NewKademliaID
+			contactNoIp := NewContact(NewKademliaID(s[2]), "")
+			kad.network.routingTable.AddContact(contactNoIp)
+			kad.LookupContact(&contactNoIp)
 		}else if s[1] == "join"{
-
+			kad.NodeJoin(s[2])
+		/*
+			1.	Ip address supplied to the node we are joining.
+			2.	Random id is supplied to this node.   
+			3.	K-bucket is initialised with the node that we first know, collect information about this node. 
+			4.	Lookup on itself to gain close nodes and the routing table is then updated in this function. 
+			5.	Done!
+		*/
 		}else{
 			fmt.Println("Incorrect command!")
 		}
