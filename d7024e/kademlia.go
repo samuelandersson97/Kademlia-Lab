@@ -13,32 +13,14 @@ type Kademlia struct {
 
 const alpha = 3
 
-func (kademlia *Kademlia) LookupContact(target *Contact) {
-	/*	--- OLD ----
-	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
-	kademlia.PerformQuery(closestContacts, target)
-		---- OLD ----*/
-	
-	// --- NEW ---
-	
+func (kademlia *Kademlia) LookupContact(target *Contact) {	
 	var visitedList []string
 	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
-	/*
-	for _, c := range closestContacts{
-		visitedList = append(visitedList, c.Address)
-	}*/
 	visitedList = append(visitedList, kademlia.network.routingTable.me.Address) //adds node itself to the visitedList in order to prevent it lookuping itself
 	if(len(closestContacts)>0){ //prevent out of bounds on closest so far
 		closestFromMe := closestContacts[0].ID.CalcDistance(target.ID)
-		kademlia.PerformQuery(closestContacts, target, visitedList, closestFromMe)
+		kademlia.PerformQuery(closestContacts, target, visitedList, closestFromMe, 0)
 	}
-	// --- NEW ---
-
-	// TODO (Node look up (Node Join))
-	//	1. 	Async calls (Alpha decides how many?) to search for the contact in the 
-	//		network (Using network.sendFindContactMessage).
-	//	2. 	Check if the contact was found, return ip, UDP-port, node-id of the closest.
-	//	3. 	Iterate with the response from step 2 if not found. 
 }
 
 func (kademlia *Kademlia) LookupData(hash string) {
@@ -57,17 +39,6 @@ func (kademlia *Kademlia) NodeJoin(address string) {
 	contactToAdd := kademlia.network.SendNodeJoinMessage(address, kademlia.network.routingTable.me)
 	kademlia.network.routingTable.AddContact(contactToAdd)
 	kademlia.LookupContact(&kademlia.network.routingTable.me)
-	//Add node lookup with this node as the target (Then the node should get an updated routing-table)
-	
-	// Comment back in to check for bucket elements
-	/*
-	for i := 0; i < 160 ; i++ {
-		if(kademlia.network.routingTable.buckets[i].Len() > 0){
-			fmt.Println(kademlia.network.routingTable.buckets[i].list.Front())
-		}
-		
-	}
-	*/
 }
 /*
 	Performs the "iteration process" where the alpha-closest from the parent nodes get queried with their closest contacts
@@ -77,32 +48,10 @@ func (kademlia *Kademlia) NodeJoin(address string) {
 
 	INITIATING NODE HAS FOUND K CONTACTS ALIVE
 */
-func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visitedIPs []string, closestSoFar *KademliaID) {
+func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visitedIPs []string, closestSoFar *KademliaID, probedContacts int) {
 	var returnContacts []Contact
 	var a []Contact
 	var queriedClosest *KademliaID
-	
-	/*	---- OLD ----
-	for _, c := range contacts{
-		a = <- kademlia.requestFromClosest(&c, target)
-		returnContacts=append(returnContacts,a...)
-	}
-
-	for _, co := range returnContacts{
-		kademlia.network.routingTable.AddContact(co)
-	}
-	sortedReturnContacts := kademlia.SortListBasedOnID(returnContacts, target)
-	if(len(sortedReturnContacts) > 0 && len(contacts) > 0){
-		if(contacts[0].ID.Less(sortedReturnContacts[0].ID)){
-			kademlia.PerformQuery(sortedReturnContacts, target)
-		}else{
-
-		}
-	}else{
-		fmt.Println("Error: No contacts!")
-	}	---- OLD ----*/
-	
-	//	---- NEW ----
 	
 	/*
 		Start off by deleting the already visited nodes from the contact list (the list we will query from)
@@ -112,6 +61,10 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		if found {
 			contacts = DeleteByAddress(c.Address, contacts)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
 		}
+	}
+	fmt.Println("PROBED CONTACTS: "+strconv.Itoa(probedContacts))
+	if(probedContacts >= 20){
+		contacts = []
 	}
 
 	//PRINT ONLY!!
@@ -128,6 +81,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 			a = <- kademlia.requestFromClosest(&srtContact[i], target)
 			visitedIPs = append(visitedIPs, srtContact[i].Address)	//add the queried node's ip to the array of visited nodes ip's
 			returnContacts = append(returnContacts,a...)
+			probedContacts = probedContacts +1
 		}
 		count = count+1	
 	}
@@ -163,14 +117,9 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, closestSoFar)
 		}else{
 			//Made progress in regards of distance this iteration
-			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, queriedClosest)
+			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, queriedClosest, addedContacts)
 		}
-	}else{
-
 	}
-
-	//	---- NEW ----
-	
 }
 
 /*
