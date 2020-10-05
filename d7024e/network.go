@@ -54,7 +54,6 @@ func (network *Network) Listen(ip string, port int) {
 
 func (network *Network) SendPingMessage(contact *Contact) bool {
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
-	fmt.Println("Inside send ping")
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
 	if err != nil {
 		fmt.Println(err)
@@ -64,7 +63,8 @@ func (network *Network) SendPingMessage(contact *Contact) bool {
 	if err != nil {
 		fmt.Println(err)
 	}
-	pingMessage := CreateProtocol("PING", nil, "", nil, "PING_SENT")
+	meContact := ContactToByteArray(network.routingTable.me)
+	pingMessage := CreateProtocol("PING", nil, "", meContact, "PING_SENT")
 	c.SetDeadline(time.Now().Add(T_OUT))
 	defer c.Close()
 	_, e := c.Write(pingMessage)
@@ -221,6 +221,7 @@ func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr,
 		if e != nil{
 			fmt.Println(e)
 		}
+		network.AddContHelper(targetContact)
 		return prot
 	}else if(prot.Message == "NODE_LOOKUP_RESPONSE"){
 		return prot
@@ -234,12 +235,14 @@ func (network *Network) PingHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 		There is "SetDeadline"-stuff in the documentation for net, check it out
 	*/
 	if(prot.Message == "PING_SENT"){
-		fmt.Println(prot.Message)
+		contactToAdd := Contact{}
+		json.Unmarshal(prot.Data[:len(prot.Data)], &contactToAdd)
 		pingResponseRPC := CreateProtocol("PING",nil,"",nil,"PING_RESPONSE")
 		_, e := connection.WriteToUDP(pingResponseRPC, responseAddr)
 		if e != nil {
 			fmt.Println(e)
 		}
+		network.AddContHelper(contactToAdd)
 		return prot
 	}else if(prot.Message == "PING_RESPONSE"){
 		fmt.Println(prot.Message)
@@ -292,8 +295,16 @@ func GetOutboundIP() string {
 
 // Add to routing table 
 func (network *Network) AddContHelper(contact Contact){
-	if(network.SendPingMessage(&contact)){
-		network.routingTable.AddContact(contact) 
+	if(contact.ID != nil){
+		if(!network.routingTable.CheckIfFull(contact.ID)){
+			network.routingTable.AddContact(contact) 
+		}else{
+			bucket := network.routingTable.GetBucket(contact.ID)
+			if(network.SendPingMessage(bucket.Back())){
+				network.routingTable.AddContact(bucket.Back()) //see AddContact in bucket
+			}else{
+				network.routingTable.AddContact(contact)
+			}
+		}
 	}
-	
 }
