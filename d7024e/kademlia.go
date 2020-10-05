@@ -63,10 +63,11 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		}
 	}
 	fmt.Println("PROBED CONTACTS: "+strconv.Itoa(probedContacts))
-	if(probedContacts >= 20){
-		contacts = []
+	for  _, c := range contacts{
+		if(probedContacts >= 20){
+			contacts = DeleteByAddress(c.Address, contacts)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
+		}
 	}
-
 	//PRINT ONLY!!
 	for _, c := range contacts{
 		fmt.Println("CONTACT TO REQUEST FROM: "+c.Address)
@@ -114,10 +115,10 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		if(closestSoFar.Less(queriedClosest) && len(contacts) > 0){
 			//Made no progress in regards of distance this iteration
 			// WHAT SHOULD BE THE DIFFERENCE???????????????????????????
-			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, closestSoFar)
+			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, closestSoFar, probedContacts)
 		}else{
 			//Made progress in regards of distance this iteration
-			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, queriedClosest, addedContacts)
+			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, queriedClosest, probedContacts)
 		}
 	}
 }
