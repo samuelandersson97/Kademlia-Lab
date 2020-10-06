@@ -17,16 +17,27 @@ type Data struct {
 }
 
 const alpha = 3
+<<<<<<< HEAD
 const bucketSize = 20
 
+=======
+>>>>>>> ec607a6a15ec94ece86b401a7f83032d26f65f76
 func (kademlia *Kademlia) LookupContact(target *Contact) []Contact{	
 	var visitedList []Contact
 	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
 	visitedList = append(visitedList, kademlia.network.routingTable.me) //adds node itself to the visitedList in order to prevent it lookuping itself
 	if(len(closestContacts)>0){ //prevent out of bounds on closest so far
 		closestFromMe := closestContacts[0].ID.CalcDistance(target.ID)
-		kademlia.PerformQuery(closestContacts, target, visitedList, closestFromMe, 0)
+		ret := kademlia.PerformQuery(closestContacts, target, visitedList, closestFromMe, 0)
+		sortRet := kademlia.SortListBasedOnID(ret, target)
+		sortRet = DeleteByAddress(kademlia.network.routingTable.me.Address, sortRet)
+		fmt.Println("################# Sorted returned list ####################")
+		for _, c := range sortRet{
+			fmt.Println(c.ID.String())
+		}
+		return sortRet
 	}
+	return nil
 }
 
 func (kademlia *Kademlia) LookupData(hash string) {
@@ -71,11 +82,10 @@ func (kademlia *Kademlia) NodeJoin(address string) {
 
 	INITIATING NODE HAS FOUND K CONTACTS ALIVE
 */
-func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visited []Contact, closestSoFar *KademliaID, probedContacts int) {
+func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visited []Contact, closestSoFar *KademliaID, probedContacts int) []Contact{
 	var returnContacts []Contact
 	var a []Contact
 	var queriedClosest *KademliaID
-	
 	/*
 		Start off by deleting the already visited nodes from the contact list (the list we will query from)
 	*/
@@ -89,6 +99,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	for  _, c := range contacts{
 		if(probedContacts >= bucketSize){
 			contacts = DeleteByAddress(c.Address, contacts)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
+			return visited
 		}
 	}
 	//PRINT ONLY!!
@@ -122,8 +133,8 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	for _, c := range sortedReturnContacts{
 		fmt.Println("Returned contact: "+c.Address)
 	}
-	for _, c := range visited{
-		fmt.Println("THESE CONTACT IP'S HAVE BEEN VISITED: "+c.Address)
+	for _, con := range visited{
+		fmt.Println("THESE CONTACT IP'S HAVE BEEN VISITED: "+con.Address)
 	}
 	var contSize = 0
 	for _, b := range kademlia.network.routingTable.buckets{
@@ -132,17 +143,20 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	fmt.Println("NUMBER OF CONTACTS IN ROUTING TABLE: "+ strconv.Itoa(contSize))
 	//PRINT ONLY!! ^^^
 
-	
+
 	if(len(sortedReturnContacts)>0){ //prevent index out of bounds
 		queriedClosest = sortedReturnContacts[0].ID.CalcDistance(target.ID)
 		if(closestSoFar.Less(queriedClosest) && len(contacts) > 0){
 			//Made no progress in regards of distance this iteration
 			// WHAT SHOULD BE THE DIFFERENCE???????????????????????????
-			kademlia.PerformQuery(sortedReturnContacts, target, visited, closestSoFar, probedContacts)
+			
+			return kademlia.PerformQuery(sortedReturnContacts, target, visited, closestSoFar, probedContacts)
 		}else{
 			//Made progress in regards of distance this iteration
-			kademlia.PerformQuery(sortedReturnContacts, target, visited, queriedClosest, probedContacts)
+			return kademlia.PerformQuery(sortedReturnContacts, target, visited, queriedClosest, probedContacts)
 		}
+	}else{
+		return visited
 	}
 }
 
@@ -227,9 +241,9 @@ func DeleteByAddress(a string, contacts []Contact) []Contact{
 
 // Find takes a slice and looks for an element in it. If found it will
 // return it's key, otherwise it will return -1 and a bool of false.
-func Find(slice []string, val string) (int, bool) {
+func Find(slice []Contact, val Contact) (int, bool) {
     for i, item := range slice {
-        if item == val {
+        if item.Address == val.Address {
             return i, true
         }
     }
