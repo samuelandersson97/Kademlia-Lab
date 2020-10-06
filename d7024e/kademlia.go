@@ -4,14 +4,15 @@ import (
 	"strconv"
 	"fmt"
 	"encoding/hex"
+	"crypto/sha1"
 )	
 
 type Kademlia struct {
-	network *network
+	network *Network
 }
 
 const alpha = 3
-const bucketSize = 20
+const k = 20
 
 func (kademlia *Kademlia) LookupContact(target *Contact) []Contact{	
 	var visitedList []Contact
@@ -37,7 +38,7 @@ func (kademlia *Kademlia) LookupData(hash string) {
 	*/
 }
 
-func (kademlia *Kademlia) Store(data []byte) {
+func (kademlia *Kademlia) Store(dataWritten []byte) {
 	/*
 		Should store the data on the node in a hashtable
 		Should also store the data on the k-closest nodes to the hash (with respect to kademlia id)
@@ -45,21 +46,22 @@ func (kademlia *Kademlia) Store(data []byte) {
 	var a bool
 	var result []bool
 	h := sha1.New()
-	h.Write(data)
-	hexEncodedContent = hex.EncodeToString(h.Sum(nil))
+	fmt.Println(string(dataWritten))
+	h.Write(dataWritten)
+	hexEncodedContent := hex.EncodeToString(h.Sum(nil))
 	keyToAdd := NewKademliaID(hexEncodedContent)
 	dataToAdd := &Data{
-		data h.Sum(nil)
-		key keyToAdd
+		Data: dataWritten,
+		Key: keyToAdd,
 	}
 	//store internally
 	kademlia.network.AddToHashTable(dataToAdd)
 	//dummy contact
-	dummyContact := NewContact(keyToAdd, "0.0.0.0")
+	dummyContact := NewContact(keyToAdd, "")
 	//lookup for closest ID and send store-rpc
 	closestContacts := kademlia.LookupContact(&dummyContact)
 	for _,c := range closestContacts{
-		a <- kademlia.sendStoreToClosest(c, dataToAdd)
+		a = <- kademlia.sendStoreToClosest(&c, dataToAdd)
 		result = append(result, a)
 	}
 	for _,b := range result{
@@ -98,7 +100,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	}
 	fmt.Println("PROBED CONTACTS: "+strconv.Itoa(probedContacts))
 	for  _, c := range contacts{
-		if(probedContacts >= bucketSize){
+		if(probedContacts >= k){
 			contacts = DeleteByAddress(c.Address, contacts)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
 			return visited
 		}
@@ -164,13 +166,13 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 /*
 
 */
-func (kademlia *Kademlia) sendStoreToClosest(contact *Contact, data *Data) <- chan bool {
+func (kademlia *Kademlia) sendStoreToClosest(contact *Contact, data *Data) <-chan bool{
 	r := make(chan bool)
 	go func(){
 		defer close(r)
 		reply:=kademlia.network.SendStoreMessage(contact.Address, data)
 		r <- reply
-	}
+	}()
 	return r
 }
 

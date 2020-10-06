@@ -10,7 +10,7 @@ import(
 
 type Network struct {
 	routingTable *RoutingTable
-	hashtable *[]Data
+	hashtable []*Data
 }
 
 type Protocol struct {
@@ -22,8 +22,13 @@ type Protocol struct {
 }
 
 type Data struct {
-	data []byte
-	key *KademliaID
+	Data []byte
+	Key *KademliaID
+}
+
+type LookupData struct {
+	Target *Contact
+	Sender Contact
 }
 
 const T_OUT = time.Millisecond*1000.
@@ -94,7 +99,14 @@ func (network *Network) SendPingMessage(contact *Contact) bool {
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact, target *Contact) []Contact {
-	targetArr := ContactToByteArray(target)
+	fmt.Println("IN sendfindcontactmessage: "+contact.String())
+	fmt.Println("IN sendfindcontactmessage: "+target.String())
+	fmt.Println("IN sendfindcontactmessage: "+network.routingTable.me.String())
+	byteArr := LookupDataToByteArray(target, network.routingTable.me)
+	lookupData := LookupData{}
+	json.Unmarshal(byteArr[:len(byteArr)], &lookupData)
+	fmt.Println(&lookupData.Sender)
+	fmt.Println(lookupData.Target)
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
 	if err != nil {
@@ -105,7 +117,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	if err != nil {
 		fmt.Println(err)
 	}
-	lookupMessage := CreateProtocol("NODE_LOOKUP", nil, "", targetArr, "NODE_LOOKUP_SENT")
+	lookupMessage := CreateProtocol("NODE_LOOKUP", nil, "", byteArr, "NODE_LOOKUP_SENT")
 	c.SetDeadline(time.Now().Add(T_OUT))
 	defer c.Close()
 	_, e := c.Write(lookupMessage)
@@ -162,8 +174,8 @@ func (network *Network) SendFindDataMessage(hash string) {
 	// TODO
 }
 
-func (network *Network) SendStoreMessage(string address, data *Data) {
-	dataToSend = DataToByteArray(data)
+func (network *Network) SendStoreMessage(address string, data *Data) bool{
+	dataToSend := DataToByteArray(data)
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",address+":1111")
 	if err != nil {
 		fmt.Println(err)
@@ -173,7 +185,7 @@ func (network *Network) SendStoreMessage(string address, data *Data) {
 	if err != nil {
 		fmt.Println(err)
 	}
-	joinMessage := CreateProtocol("NODE_STORE", nil, "", data, "NODE_STORE_SENT")
+	joinMessage := CreateProtocol("NODE_STORE", nil, "", dataToSend, "NODE_STORE_SENT")
 	c.SetDeadline(time.Now().Add(T_OUT))
 	defer c.Close()
 	_, e := c.Write(joinMessage)
@@ -215,13 +227,19 @@ func (network *Network) DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, co
 func (network *Network) StoreHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
 	if(prot.Message == "NODE_STORE_SENT"){
 		sentData := Data{}
+		var protToSend []byte
 		json.Unmarshal(prot.Data[:len(prot.Data)], &sentData)
-		if(network.AddToHashTable(sentData)){
-			prot := CreateProtocol("NODE_STORE", nil, "", nil, "NODE_STORE_ACCEPTED")
+		success := network.AddToHashTable(&sentData)
+		fmt.Println(success)
+		if(success){
+			for _, d := range network.hashtable {
+				fmt.Println(string(d.Data))
+			}
+			protToSend = CreateProtocol("NODE_STORE", nil, "", nil, "NODE_STORE_ACCEPTED")
 		}else{
-			prot := CreateProtocol("NODE_STORE", nil, "", nil, "NODE_STORE_REJECTED")
+			protToSend = CreateProtocol("NODE_STORE", nil, "", nil, "NODE_STORE_REJECTED")
 		}
-		e, _ := connection.WriteToUDP(prot, responseAddr)
+		_, e := connection.WriteToUDP(protToSend, responseAddr)
 		if e != nil{
 			fmt.Println(e)
 		}
@@ -264,9 +282,11 @@ func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 
 func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
 	if(prot.Message == "NODE_LOOKUP_SENT"){
-		targetContact := Contact{}
-		json.Unmarshal(prot.Data[:len(prot.Data)], &targetContact)
-		closestContactsArray := network.routingTable.FindClosestContacts(targetContact.ID, 3)
+		lookupData := LookupData{}
+		json.Unmarshal(prot.Data[:len(prot.Data)], &lookupData)
+		fmt.Println(&lookupData.Sender)
+		fmt.Println(lookupData.Target)
+		closestContactsArray := network.routingTable.FindClosestContacts(lookupData.Target.ID, 3)
 		for _,c := range closestContactsArray{
 			fmt.Println("This contact was one of the closest: "+c.Address)
 		}
@@ -275,7 +295,7 @@ func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr,
 		if e != nil{
 			fmt.Println(e)
 		}
-		network.AddContHelper(targetContact)
+		network.AddContHelper(lookupData.Sender)
 		return prot
 	}else if(prot.Message == "NODE_LOOKUP_RESPONSE"){
 		return prot
@@ -315,9 +335,23 @@ func ContactToByteArray(contact *Contact) []byte {
 }
 
 func DataToByteArray(data *Data) []byte {
-	dataByteArray, err := Json.Marshal(data)
+	dataByteArray, err := json.Marshal(data)
 	if err != nil{
 		fmt.Println(err)
+		return nil
+	}
+	return dataByteArray
+}
+
+func LookupDataToByteArray(targetCont *Contact, senderCont Contact) []byte {
+	fmt.Println("LDTBA: "+targetCont.String())
+	fmt.Println("LDTBA: "+senderCont.String())
+	data := &LookupData{
+		Target: targetCont,
+		Sender: senderCont}
+	dataByteArray, err := json.Marshal(data)
+	if err != nil{
+		fmt.Println("AADGSDGDSGHDSHDSHDSHDSHSDHSDHSDHSDHSDHSDHSDHSDHDSHSDHSDHDSHSDHSDHDS")
 		return nil
 	}
 	return dataByteArray
@@ -375,7 +409,7 @@ func (network *Network) AddContHelper(contact Contact){
 }
 
 func (network *Network) AddToHashTable(data *Data) bool{
-	_, b = Find(network.hashtable, data)
+	_, b := FindInHash(network.hashtable, data)
 	if(!b){
 		network.hashtable = append(network.hashtable, data)
 		return true
@@ -384,9 +418,9 @@ func (network *Network) AddToHashTable(data *Data) bool{
 }
 
 //checks only if the value exists, not the key
-func Find(slice []hashtable, val *Data) (int, bool) {
+func FindInHash(slice []*Data, val *Data) (int, bool) {
     for i, item := range slice {
-        if item.value == val.value {
+        if(string(item.Data) == string(val.Data)){
             return i, true
         }
     }

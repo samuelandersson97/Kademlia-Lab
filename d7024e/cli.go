@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"bufio"
 	"strings"
-	"crypto/sha1"
 )
 
 /*
@@ -67,7 +66,7 @@ func HandleInput(s []string,  kad *Kademlia) {
 		
 	}else if operation == "show"{
 		for _, d := range kad.network.hashtable {
-			fmt.Println(string(d.data))
+			fmt.Println(string(d.Data))
 		}
 	}else if operation == "exit"{
 		os.Exit(0)
