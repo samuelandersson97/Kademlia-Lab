@@ -8,20 +8,11 @@ import (
 
 type Kademlia struct {
 	network *network
-	hashtable *[]Data
-}
-
-type Data struct {
-	data []byte
-	key *KademliaID
 }
 
 const alpha = 3
-<<<<<<< HEAD
 const bucketSize = 20
 
-=======
->>>>>>> ec607a6a15ec94ece86b401a7f83032d26f65f76
 func (kademlia *Kademlia) LookupContact(target *Contact) []Contact{	
 	var visitedList []Contact
 	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
@@ -51,6 +42,8 @@ func (kademlia *Kademlia) Store(data []byte) {
 		Should store the data on the node in a hashtable
 		Should also store the data on the k-closest nodes to the hash (with respect to kademlia id)
 	*/
+	var a bool
+	var result []bool
 	h := sha1.New()
 	h.Write(data)
 	hexEncodedContent = hex.EncodeToString(h.Sum(nil))
@@ -60,12 +53,20 @@ func (kademlia *Kademlia) Store(data []byte) {
 		key keyToAdd
 	}
 	//store internally
-	kademlia.hashtable = append(kademlia.hashtable, dataToAdd)
+	kademlia.network.AddToHashTable(dataToAdd)
 	//dummy contact
 	dummyContact := NewContact(keyToAdd, "0.0.0.0")
-	//lookup for closest ID
-	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
-
+	//lookup for closest ID and send store-rpc
+	closestContacts := kademlia.LookupContact(&dummyContact)
+	for _,c := range closestContacts{
+		a <- kademlia.sendStoreToClosest(c, dataToAdd)
+		result = append(result, a)
+	}
+	for _,b := range result{
+		if(b==false){
+			fmt.Println("Failed at store")
+		}
+	}
 }
 
 func (kademlia *Kademlia) NodeJoin(address string) {
@@ -158,6 +159,19 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	}else{
 		return visited
 	}
+}
+
+/*
+
+*/
+func (kademlia *Kademlia) sendStoreToClosest(contact *Contact, data *Data) <- chan bool {
+	r := make(chan bool)
+	go func(){
+		defer close(r)
+		reply:=kademlia.network.SendStoreMessage(contact.Address, data)
+		r <- reply
+	}
+	return r
 }
 
 /*

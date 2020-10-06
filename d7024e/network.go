@@ -10,6 +10,7 @@ import(
 
 type Network struct {
 	routingTable *RoutingTable
+	hashtable *[]Data
 }
 
 type Protocol struct {
@@ -18,6 +19,11 @@ type Protocol struct {
 	Hash string			//used for get
 	Data []byte			//sending data needed for given rpc
 	Message string		//used for sent/recieve of the rpc
+}
+
+type Data struct {
+	data []byte
+	key *KademliaID
 }
 
 const T_OUT = time.Millisecond*1000.
@@ -156,8 +162,37 @@ func (network *Network) SendFindDataMessage(hash string) {
 	// TODO
 }
 
-func (network *Network) SendStoreMessage(data []byte) {
-	// TODO
+func (network *Network) SendStoreMessage(string address, data *Data) {
+	dataToSend = DataToByteArray(data)
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",address+":1111")
+	if err != nil {
+		fmt.Println(err)
+	}
+	// Starts up a UDP-connection to the resolved UDP-address 
+	c, err := net.DialUDP("udp4",nil, udpEndPoint)
+	if err != nil {
+		fmt.Println(err)
+	}
+	joinMessage := CreateProtocol("NODE_STORE", nil, "", data, "NODE_STORE_SENT")
+	c.SetDeadline(time.Now().Add(T_OUT))
+	defer c.Close()
+	_, e := c.Write(joinMessage)
+	if e != nil {
+		fmt.Println(err)
+	}
+	responseBuffer := make([]byte, 8192)
+	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
+	storeResponse := Protocol{}
+	if err != nil {
+		fmt.Println(err)
+	}
+	json.Unmarshal(responseBuffer[:size], &storeResponse)
+	responseProtocol := network.DecodeRPC(&storeResponse, senderAddress, c)
+	if(responseProtocol.Message=="NODE_STORE_ACCEPTED"){
+		return true
+	}else{
+		return false
+	}
 }
 
 func (network *Network) DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, connection *net.UDPConn) *Protocol{
@@ -170,10 +205,29 @@ func (network *Network) DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, co
 	}else if(prot.Rpc == "NODE_VALUE"){
 		return nil
 	}else if(prot.Rpc == "NODE_STORE"){
-		return nil
+		return network.StoreHandler(prot, senderAddress, connection)
 	}else{
 		fmt.Println("ERROR. RPC TYPE COULD NOT BE FOUND")
 		return nil
+	}
+}
+
+func (network *Network) StoreHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
+	if(prot.Message == "NODE_STORE_SENT"){
+		sentData := Data{}
+		json.Unmarshal(prot.Data[:len(prot.Data)], &sentData)
+		if(network.AddToHashTable(sentData)){
+			prot := CreateProtocol("NODE_STORE", nil, "", nil, "NODE_STORE_ACCEPTED")
+		}else{
+			prot := CreateProtocol("NODE_STORE", nil, "", nil, "NODE_STORE_REJECTED")
+		}
+		e, _ := connection.WriteToUDP(prot, responseAddr)
+		if e != nil{
+			fmt.Println(e)
+		}
+		return prot
+	}else{
+		return prot
 	}
 }
 
@@ -260,6 +314,15 @@ func ContactToByteArray(contact *Contact) []byte {
 	return contactByteArray
 }
 
+func DataToByteArray(data *Data) []byte {
+	dataByteArray, err := Json.Marshal(data)
+	if err != nil{
+		fmt.Println(err)
+		return nil
+	}
+	return dataByteArray
+}
+
 func CreateProtocol(rpcToSend string, contactsArr []Contact, hashToSend string, dataToSend []byte, messageToSend string) []byte{
 	protocol := &Protocol{
 		Rpc: rpcToSend,
@@ -309,4 +372,23 @@ func (network *Network) AddContHelper(contact Contact){
 			}
 		}
 	}
+}
+
+func (network *Network) AddToHashTable(data *Data) bool{
+	_, b = Find(network.hashtable, data)
+	if(!b){
+		network.hashtable = append(network.hashtable, data)
+		return true
+	}
+	return false
+}
+
+//checks only if the value exists, not the key
+func Find(slice []hashtable, val *Data) (int, bool) {
+    for i, item := range slice {
+        if item.value == val.value {
+            return i, true
+        }
+    }
+    return -1, false
 }
