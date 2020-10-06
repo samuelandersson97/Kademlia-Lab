@@ -14,10 +14,14 @@ import (
 
 func main() {
 	myIP := d7024e.GetOutboundIP()
+	
 	me := d7024e.NewContact(d7024e.NewRandomKademliaID(),myIP)
 	rt := d7024e.NewRoutingTable(me)
 	network := d7024e.InitNetwork(rt)
 	kad := d7024e.InitKademlia(network)
+	if(!(myIP == "172.1.17.2")){
+		kad.NodeJoin("172.1.17.2")
+	}
 	go network.Listen(myIP, 1111)
 	d7024e.CliGreeting()
 	for{
