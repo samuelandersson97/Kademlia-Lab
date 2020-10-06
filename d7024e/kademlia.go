@@ -3,15 +3,16 @@ package d7024e
 import (
 	"strconv"
 	"fmt"
+	"encoding/hex"
 )	
 
 type Kademlia struct {
-	network *Network
-	// Routing table holds the contact information about this node 
-	// It also has information about the bucket and holds information about contacts that this node knows are in the network.
+	network *network
 }
 
 const alpha = 3
+const bucketSize = 20
+
 func (kademlia *Kademlia) LookupContact(target *Contact) []Contact{	
 	var visitedList []Contact
 	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
@@ -38,8 +39,34 @@ func (kademlia *Kademlia) LookupData(hash string) {
 
 func (kademlia *Kademlia) Store(data []byte) {
 	/*
-		Should just store the data on the node in a hashtable
+		Should store the data on the node in a hashtable
+		Should also store the data on the k-closest nodes to the hash (with respect to kademlia id)
 	*/
+	var a bool
+	var result []bool
+	h := sha1.New()
+	h.Write(data)
+	hexEncodedContent = hex.EncodeToString(h.Sum(nil))
+	keyToAdd := NewKademliaID(hexEncodedContent)
+	dataToAdd := &Data{
+		data h.Sum(nil)
+		key keyToAdd
+	}
+	//store internally
+	kademlia.network.AddToHashTable(dataToAdd)
+	//dummy contact
+	dummyContact := NewContact(keyToAdd, "0.0.0.0")
+	//lookup for closest ID and send store-rpc
+	closestContacts := kademlia.LookupContact(&dummyContact)
+	for _,c := range closestContacts{
+		a <- kademlia.sendStoreToClosest(c, dataToAdd)
+		result = append(result, a)
+	}
+	for _,b := range result{
+		if(b==false){
+			fmt.Println("Failed at store")
+		}
+	}
 }
 
 func (kademlia *Kademlia) NodeJoin(address string) {
@@ -47,6 +74,7 @@ func (kademlia *Kademlia) NodeJoin(address string) {
 	kademlia.network.AddContHelper(contactToAdd)
 	kademlia.LookupContact(&kademlia.network.routingTable.me)
 }
+
 /*
 	Performs the "iteration process" where the alpha-closest from the parent nodes get queried with their closest contacts
 	For each of the alpha contacts, a thread starts and queries the contact for its alpha-closest. The result will be stored in a.
@@ -70,7 +98,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	}
 	fmt.Println("PROBED CONTACTS: "+strconv.Itoa(probedContacts))
 	for  _, c := range contacts{
-		if(probedContacts >= 20){
+		if(probedContacts >= bucketSize){
 			contacts = DeleteByAddress(c.Address, contacts)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
 			return visited
 		}
@@ -131,6 +159,19 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	}else{
 		return visited
 	}
+}
+
+/*
+
+*/
+func (kademlia *Kademlia) sendStoreToClosest(contact *Contact, data *Data) <- chan bool {
+	r := make(chan bool)
+	go func(){
+		defer close(r)
+		reply:=kademlia.network.SendStoreMessage(contact.Address, data)
+		r <- reply
+	}
+	return r
 }
 
 /*
