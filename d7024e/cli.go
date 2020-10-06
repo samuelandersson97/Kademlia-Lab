@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"bufio"
 	"strings"
+	"crypto/sha1"
 )
 
 /*
@@ -61,7 +62,7 @@ func HandleInput(s []string,  kad *Kademlia) {
 			fmt.Println("Incorrect command!")
 		}
 	}else if operation == "put"{
-		
+		kad.Store([]byte(s[1]))
 	}else if operation == "get"{
 		
 	}else if operation == "exit"{

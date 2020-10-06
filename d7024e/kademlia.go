@@ -3,20 +3,26 @@ package d7024e
 import (
 	"strconv"
 	"fmt"
+	"encoding/hex"
 )	
 
 type Kademlia struct {
-	network *Network
-	// Routing table holds the contact information about this node 
-	// It also has information about the bucket and holds information about contacts that this node knows are in the network.
+	network *network
+	hashtable *[]Data
+}
+
+type Data struct {
+	data []byte
+	key *KademliaID
 }
 
 const alpha = 3
+const bucketSize = 20
 
-func (kademlia *Kademlia) LookupContact(target *Contact) {	
-	var visitedList []string
+func (kademlia *Kademlia) LookupContact(target *Contact) []Contact{	
+	var visitedList []Contact
 	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
-	visitedList = append(visitedList, kademlia.network.routingTable.me.Address) //adds node itself to the visitedList in order to prevent it lookuping itself
+	visitedList = append(visitedList, kademlia.network.routingTable.me) //adds node itself to the visitedList in order to prevent it lookuping itself
 	if(len(closestContacts)>0){ //prevent out of bounds on closest so far
 		closestFromMe := closestContacts[0].ID.CalcDistance(target.ID)
 		kademlia.PerformQuery(closestContacts, target, visitedList, closestFromMe, 0)
@@ -31,8 +37,24 @@ func (kademlia *Kademlia) LookupData(hash string) {
 
 func (kademlia *Kademlia) Store(data []byte) {
 	/*
-		Should just store the data on the node in a hashtable
+		Should store the data on the node in a hashtable
+		Should also store the data on the k-closest nodes to the hash (with respect to kademlia id)
 	*/
+	h := sha1.New()
+	h.Write(data)
+	hexEncodedContent = hex.EncodeToString(h.Sum(nil))
+	keyToAdd := NewKademliaID(hexEncodedContent)
+	dataToAdd := &Data{
+		data h.Sum(nil)
+		key keyToAdd
+	}
+	//store internally
+	kademlia.hashtable = append(kademlia.hashtable, dataToAdd)
+	//dummy contact
+	dummyContact := NewContact(keyToAdd, "0.0.0.0")
+	//lookup for closest ID
+	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
+
 }
 
 func (kademlia *Kademlia) NodeJoin(address string) {
@@ -40,6 +62,7 @@ func (kademlia *Kademlia) NodeJoin(address string) {
 	kademlia.network.AddContHelper(contactToAdd)
 	kademlia.LookupContact(&kademlia.network.routingTable.me)
 }
+
 /*
 	Performs the "iteration process" where the alpha-closest from the parent nodes get queried with their closest contacts
 	For each of the alpha contacts, a thread starts and queries the contact for its alpha-closest. The result will be stored in a.
@@ -48,7 +71,7 @@ func (kademlia *Kademlia) NodeJoin(address string) {
 
 	INITIATING NODE HAS FOUND K CONTACTS ALIVE
 */
-func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visitedIPs []string, closestSoFar *KademliaID, probedContacts int) {
+func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visited []Contact, closestSoFar *KademliaID, probedContacts int) {
 	var returnContacts []Contact
 	var a []Contact
 	var queriedClosest *KademliaID
@@ -57,14 +80,14 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		Start off by deleting the already visited nodes from the contact list (the list we will query from)
 	*/
 	for _, c := range contacts{
-		_, found := Find(visitedIPs, c.Address)
+		_, found := Find(visited, c)
 		if found {
 			contacts = DeleteByAddress(c.Address, contacts)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
 		}
 	}
 	fmt.Println("PROBED CONTACTS: "+strconv.Itoa(probedContacts))
 	for  _, c := range contacts{
-		if(probedContacts >= 20){
+		if(probedContacts >= bucketSize){
 			contacts = DeleteByAddress(c.Address, contacts)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
 		}
 	}
@@ -80,7 +103,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		if count < alpha{
 			fmt.Println("QUERIES THIS CONTACT FOR NODES: "+srtContact[i].String())
 			a = <- kademlia.requestFromClosest(&srtContact[i], target)
-			visitedIPs = append(visitedIPs, srtContact[i].Address)	//add the queried node's ip to the array of visited nodes ip's
+			visited = append(visited, srtContact[i])	//add the queried node's ip to the array of visited nodes ip's
 			returnContacts = append(returnContacts,a...)
 			probedContacts = probedContacts +1
 		}
@@ -99,8 +122,8 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 	for _, c := range sortedReturnContacts{
 		fmt.Println("Returned contact: "+c.Address)
 	}
-	for _, ip := range visitedIPs{
-		fmt.Println("THESE CONTACT IP'S HAVE BEEN VISITED: "+ip)
+	for _, c := range visited{
+		fmt.Println("THESE CONTACT IP'S HAVE BEEN VISITED: "+c.Address)
 	}
 	var contSize = 0
 	for _, b := range kademlia.network.routingTable.buckets{
@@ -115,10 +138,10 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		if(closestSoFar.Less(queriedClosest) && len(contacts) > 0){
 			//Made no progress in regards of distance this iteration
 			// WHAT SHOULD BE THE DIFFERENCE???????????????????????????
-			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, closestSoFar, probedContacts)
+			kademlia.PerformQuery(sortedReturnContacts, target, visited, closestSoFar, probedContacts)
 		}else{
 			//Made progress in regards of distance this iteration
-			kademlia.PerformQuery(sortedReturnContacts, target, visitedIPs, queriedClosest, probedContacts)
+			kademlia.PerformQuery(sortedReturnContacts, target, visited, queriedClosest, probedContacts)
 		}
 	}
 }
