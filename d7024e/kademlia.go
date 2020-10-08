@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"encoding/hex"
 	"crypto/sha1"
+	"regexp"
 )	
 
 type Kademlia struct {
@@ -32,7 +33,7 @@ func (kademlia *Kademlia) LookupContact(target *Contact,) []Contact{
 	return nil
 }
 
-func (kademlia *Kademlia) LookupData(hash string) {
+func (kademlia *Kademlia) LookupData(hash string) string {
 	/*
 		Should use LookupContact in order to find several nodes and check each of the nodes if they got any data "attached" to the given hash
 	
@@ -44,6 +45,29 @@ func (kademlia *Kademlia) LookupData(hash string) {
 			3.	
 	*/
 
+	match, _ := regexp.MatchString(`[0-9a-fA-F]{40}`, hash)
+	if !match {
+		fmt.Println("Key not valid")
+		return ""
+	}
+
+	value := kademlia.SearchKademliaStorage(hash)
+	if value != nil {
+		return string(value.value)
+	}
+}
+
+func (kademlia *Kademlia) SearchKademliaStorage(hash string) Data {
+	key := NewKademliaID(hash)
+	
+	for _, e := range network.Data.Data {
+		if e.Key.Equals(key) {
+			fmt.Println("Data found: " + string(e.Value))
+			return e
+		}
+	}
+
+	return nil
 }
 
 func (kademlia *Kademlia) Store(dataWritten []byte) {
