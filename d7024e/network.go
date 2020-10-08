@@ -170,7 +170,7 @@ func (network *Network) SendNodeJoinMessage(address string, me Contact) Contact 
 	
 }
 
-func (network *Network) SendFindDataMessage(hash string) {
+func (network *Network) SendFindDataMessage(address string, hash string) []byte{
 	// TODO
 }
 

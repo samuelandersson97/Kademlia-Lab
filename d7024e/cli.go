@@ -47,7 +47,7 @@ func HandleInput(s []string,  kad *Kademlia) {
 			//Retrieves the wrong id. This is because decoding is done on the input-string in NewKademliaID
 			contactNoIp := NewContact(NewKademliaID(s[2]), "")
 			kad.network.routingTable.AddContact(contactNoIp)
-			kad.LookupContact(&contactNoIp)
+			kad.LookupContact(&contactNoIp, true)
 		}else if s[1] == "join"{
 			kad.NodeJoin(s[2])
 		/*

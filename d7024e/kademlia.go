@@ -14,7 +14,7 @@ type Kademlia struct {
 const alpha = 3
 const k = 20
 
-func (kademlia *Kademlia) LookupContact(target *Contact) []Contact{	
+func (kademlia *Kademlia) LookupContact(target *Contact,) []Contact{	
 	var visitedList []Contact
 	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
 	visitedList = append(visitedList, kademlia.network.routingTable.me) //adds node itself to the visitedList in order to prevent it lookuping itself
@@ -35,7 +35,15 @@ func (kademlia *Kademlia) LookupContact(target *Contact) []Contact{
 func (kademlia *Kademlia) LookupData(hash string) {
 	/*
 		Should use LookupContact in order to find several nodes and check each of the nodes if they got any data "attached" to the given hash
+	
+		1. 	Kolla så att hashen är giltig
+		2. 	Kolla ifall vi har datat
+		3.	Skicka förfrågan om datat till andra noder
+			1.	Lookup contact (nyckel = target)
+			2.	Skicka förfrågan till alla vi får tilbaka från lookup.
+			3.	
 	*/
+
 }
 
 func (kademlia *Kademlia) Store(dataWritten []byte) {
@@ -176,6 +184,17 @@ func (kademlia *Kademlia) sendStoreToClosest(contact *Contact, data *Data) <-cha
 	return r
 }
 
+/*
+*/
+func (kademlia *Kademlia) sendFindData(contact *Contact, hash string) <-chan []byte]{
+	r := make(chan bool)
+	go func(){
+		defer close(r)
+		reply:=kademlia.network.SendFindDataMessage(contact.Address, hash)
+		r <- reply
+	}()
+	return r
+}
 /*
 	Requests the closest alpha-contacts from a given contact.
 	Returns a list of contacts.
