@@ -15,14 +15,14 @@ type Kademlia struct {
 const alpha = 3
 const k = 20
 
-func (kademlia *Kademlia) LookupContact(target *Contact,) []Contact{	
+func (kademlia *Kademlia) LookupContact(target *Contact) []Contact{	
 	var visitedList []Contact
 	closestContacts := kademlia.network.routingTable.FindClosestContacts(target.ID, alpha)
 	visitedList = append(visitedList, kademlia.network.routingTable.me) //adds node itself to the visitedList in order to prevent it lookuping itself
 	if(len(closestContacts)>0){ //prevent out of bounds on closest so far
 		closestFromMe := closestContacts[0].ID.CalcDistance(target.ID)
 		ret := kademlia.PerformQuery(closestContacts, target, visitedList, closestFromMe, 0)
-		sortRet := kademlia.SortListBasedOnID(ret, target)
+		sortRet := kademlia.SortListBasedOnID(ret, target.ID)
 		sortRet = DeleteByAddress(kademlia.network.routingTable.me.Address, sortRet)
 		fmt.Println("################# Sorted returned list ####################")
 		for _, c := range sortRet{
@@ -44,7 +44,7 @@ func (kademlia *Kademlia) LookupData(hash string) string {
 			2.	Skicka förfrågan till alla vi får tilbaka från lookup.
 			3.	
 	*/
-
+	var visitedList []Contact
 	match, _ := regexp.MatchString(`[0-9a-fA-F]{40}`, hash)
 	if !match {
 		fmt.Println("Key not valid")
@@ -53,16 +53,28 @@ func (kademlia *Kademlia) LookupData(hash string) string {
 
 	value := kademlia.SearchKademliaStorage(hash)
 	if value != nil {
-		return string(value.value)
+		return string(value)
+	}else{
+		// Search for the value in kademlia network
+		key := NewKademliaID(hash)
+		visitedList = append(visitedList, kademlia.network.routingTable.me)
+		closestContacts := kademlia.network.routingTable.FindClosestContacts(key, alpha) // Get the alpha closest contaccts to our key from routing table
+		closestFromKey := closestContacts[0].ID.CalcDistance(key)
+		data := SearchByKey(closestContacts,key,visitedList,closestFromKey)
+		if(data != nil){
+			return data
+		}else{
+			return ""
+		}
 	}
 }
 
-func (kademlia *Kademlia) SearchKademliaStorage(hash string) Data {
+func (kademlia *Kademlia) SearchKademliaStorage(hash string) []byte {
 	key := NewKademliaID(hash)
 	
-	for _, e := range network.Data.Data {
+	for _, e := range network.hashtable {
 		if e.Key.Equals(key) {
-			fmt.Println("Data found: " + string(e.Value))
+			fmt.Println("Data found: " + string(e.Data))
 			return e
 		}
 	}
@@ -142,7 +154,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		fmt.Println("CONTACT TO REQUEST FROM: "+c.Address)
 	}
 
-	srtContact := kademlia.SortListBasedOnID(contacts, target)	//Needs to be sorted again after deletion. Stupid delete implementation.
+	srtContact := kademlia.SortListBasedOnID(contacts, target.ID)	//Needs to be sorted again after deletion. Stupid delete implementation.
 	
 	var count = 0 						//counter to prevent more than alpha concurrent calls
 	for i := 0; i<len(srtContact); i++{	//loop on srtContact length in order to prevent out of bounds exception
@@ -163,7 +175,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		}
 		
 	}
-	sortedReturnContacts := kademlia.SortListBasedOnID(returnContacts, target)
+	sortedReturnContacts := kademlia.SortListBasedOnID(returnContacts, target.ID)
 	//PRINT ONLY!!
 	for _, c := range sortedReturnContacts{
 		fmt.Println("Returned contact: "+c.Address)
@@ -192,6 +204,70 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 		}
 	}else{
 		return visited
+	}
+}
+
+/*
+*/
+func (kademlia *Kademlia) SearchByKey(contacts []Contact, target *KademliaID, visited []Contact, closestSoFar *KademliaID) []byte]{
+	var returnContacts []Contact
+	var a []Contact
+	var data []byte
+	var queriedClosest *KademliaID
+	targetContact := NewContact(target,"")
+	/*
+		Start off by deleting the already visited nodes from the contact list (the list we will query from)
+	*/
+	for _, c := range contacts{
+		_, found := Find(visited, c)
+		if found {
+			contacts = DeleteByAddress(c.Address, contacts)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
+		}
+	}
+	
+	//PRINT ONLY!!
+	for _, c := range contacts{
+		fmt.Println("CONTACT TO REQUEST FROM: "+c.Address)
+	}
+
+	srtContact := kademlia.SortListBasedOnID(contacts, target)	//Needs to be sorted again after deletion. Stupid delete implementation.
+	
+	var count = 0 						//counter to prevent more than alpha concurrent calls
+	for i := 0; i<len(srtContact); i++{	//loop on srtContact length in order to prevent out of bounds exception
+		if count < alpha{
+			fmt.Println("QUERIES THIS CONTACT FOR NODES: "+srtContact[i].String())
+			a = <- kademlia.requestFromClosest(&srtContact[i], targetContact)
+			visited = append(visited, srtContact[i])	//add the queried node's ip to the array of visited nodes ip's
+			returnContacts = append(returnContacts,a...)
+			data = kademlia.reguestDataFromClosest(&srtContact[i], target)
+			if(data != nil){
+				return data
+			}
+		}
+		count = count+1	
+	}
+	for _, co := range returnContacts{
+		if(kademlia.network.routingTable.me.ID.Equals(co.ID)){
+			returnContacts = DeleteByAddress(co.Address, returnContacts)
+		}else{
+			kademlia.network.AddContHelper(co) // Add contacts to the routing table
+		}
+		
+	}
+	sortedReturnContacts := kademlia.SortListBasedOnID(returnContacts, target)
+
+
+	if(len(sortedReturnContacts)>0){ //prevent index out of bounds
+		queriedClosest = sortedReturnContacts[0].ID.CalcDistance(target)
+		if(closestSoFar.Less(queriedClosest) && len(contacts) > 0){
+			//Made no progress in regards of distance this iteration
+			return kademlia.SearchByKey(sortedReturnContacts, target, visited, closestSoFar)
+		}else{
+			//Made progress in regards of distance this iteration
+			return kademlia.SearchByKey(sortedReturnContacts, target, visited, queriedClosest)
+		}
+	}else{
+		return nil
 	}
 }
 
@@ -234,18 +310,32 @@ func (kademlia *Kademlia) requestFromClosest(contact *Contact, target *Contact) 
 	return r
 }
 
+
+/*
+*/
+func (kademlia *Kademlia) requestDataFromClosest(contact *Contact, target *KademliaID) <-chan []byte {
+	r := make(chan []Contact)
+	go func(){
+		defer close(r)
+		reply:=kademlia.network.SendFindDataMessage(contact,target)
+		r <- reply
+	}()
+	return r
+}
+
+
 /*
 	Finds the closest distance from the list of contacts with respect to the target
 	Returns the index in the array of that contact, the contact itself
 */
 
-func (kademlia *Kademlia)FindClosestDist(contacts []Contact, target *Contact) (int,Contact, string){
+func (kademlia *Kademlia)FindClosestDist(contacts []Contact, target *KademliaID) (int,Contact, string){
 	if len(contacts) > 0 {
 		closest := contacts[0].ID
 		contact := contacts[0]
 		index := 0
 		for i, c := range contacts{
-			if c.ID.CalcDistance(target.ID).Less(closest){
+			if c.ID.CalcDistance(target).Less(closest){
 				closest = c.ID
 				contact = c
 				index = i
@@ -262,7 +352,7 @@ func (kademlia *Kademlia)FindClosestDist(contacts []Contact, target *Contact) (i
 	The closest-distance-contact get removed from the searched list for each time, hence the sort will work
 */
 
-func (kademlia *Kademlia)SortListBasedOnID(contacts []Contact, target *Contact) []Contact{
+func (kademlia *Kademlia)SortListBasedOnID(contacts []Contact, target *KademliaID) []Contact{
 	var newList []Contact
 	for i := 0; i <= alpha; i++{	//Loops through index 0,1,2,3? Although alpha=3 implies that there should only be tree elements in the list
 		index, contact, err := kademlia.FindClosestDist(contacts, target)

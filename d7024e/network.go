@@ -172,6 +172,7 @@ func (network *Network) SendNodeJoinMessage(address string, me Contact) Contact 
 
 func (network *Network) SendFindDataMessage(address string, hash string) []byte{
 	// TODO
+	return nil
 }
 
 func (network *Network) SendStoreMessage(address string, data *Data) bool{
