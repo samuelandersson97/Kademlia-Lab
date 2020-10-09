@@ -60,9 +60,9 @@ func (kademlia *Kademlia) LookupData(hash string) string {
 		visitedList = append(visitedList, kademlia.network.routingTable.me)
 		closestContacts := kademlia.network.routingTable.FindClosestContacts(key, alpha) // Get the alpha closest contaccts to our key from routing table
 		closestFromKey := closestContacts[0].ID.CalcDistance(key)
-		data := SearchByKey(closestContacts,key,visitedList,closestFromKey)
+		data := kademlia.SearchByKey(closestContacts,key,visitedList,closestFromKey,hash)
 		if(data != nil){
-			return data
+			return string(data)
 		}else{
 			return ""
 		}
@@ -72,10 +72,10 @@ func (kademlia *Kademlia) LookupData(hash string) string {
 func (kademlia *Kademlia) SearchKademliaStorage(hash string) []byte {
 	key := NewKademliaID(hash)
 	
-	for _, e := range network.hashtable {
+	for _, e := range kademlia.network.hashtable {
 		if e.Key.Equals(key) {
 			fmt.Println("Data found: " + string(e.Data))
-			return e
+			return e.Data
 		}
 	}
 
@@ -93,6 +93,7 @@ func (kademlia *Kademlia) Store(dataWritten []byte) {
 	fmt.Println(string(dataWritten))
 	h.Write(dataWritten)
 	hexEncodedContent := hex.EncodeToString(h.Sum(nil))
+	fmt.Println("This is the hash: "+hexEncodedContent)
 	keyToAdd := NewKademliaID(hexEncodedContent)
 	dataToAdd := &Data{
 		Data: dataWritten,
@@ -209,7 +210,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 
 /*
 */
-func (kademlia *Kademlia) SearchByKey(contacts []Contact, target *KademliaID, visited []Contact, closestSoFar *KademliaID) []byte]{
+func (kademlia *Kademlia) SearchByKey(contacts []Contact, target *KademliaID, visited []Contact, closestSoFar *KademliaID, hash string) []byte{
 	var returnContacts []Contact
 	var a []Contact
 	var data []byte
@@ -236,10 +237,10 @@ func (kademlia *Kademlia) SearchByKey(contacts []Contact, target *KademliaID, vi
 	for i := 0; i<len(srtContact); i++{	//loop on srtContact length in order to prevent out of bounds exception
 		if count < alpha{
 			fmt.Println("QUERIES THIS CONTACT FOR NODES: "+srtContact[i].String())
-			a = <- kademlia.requestFromClosest(&srtContact[i], targetContact)
+			a = <- kademlia.requestFromClosest(&srtContact[i], &targetContact)
 			visited = append(visited, srtContact[i])	//add the queried node's ip to the array of visited nodes ip's
 			returnContacts = append(returnContacts,a...)
-			data = kademlia.reguestDataFromClosest(&srtContact[i], target)
+			data = <- kademlia.requestDataFromClosest(&srtContact[i], hash)
 			if(data != nil){
 				return data
 			}
@@ -261,10 +262,10 @@ func (kademlia *Kademlia) SearchByKey(contacts []Contact, target *KademliaID, vi
 		queriedClosest = sortedReturnContacts[0].ID.CalcDistance(target)
 		if(closestSoFar.Less(queriedClosest) && len(contacts) > 0){
 			//Made no progress in regards of distance this iteration
-			return kademlia.SearchByKey(sortedReturnContacts, target, visited, closestSoFar)
+			return kademlia.SearchByKey(sortedReturnContacts, target, visited, closestSoFar, hash)
 		}else{
 			//Made progress in regards of distance this iteration
-			return kademlia.SearchByKey(sortedReturnContacts, target, visited, queriedClosest)
+			return kademlia.SearchByKey(sortedReturnContacts, target, visited, queriedClosest, hash)
 		}
 	}else{
 		return nil
@@ -284,17 +285,7 @@ func (kademlia *Kademlia) sendStoreToClosest(contact *Contact, data *Data) <-cha
 	return r
 }
 
-/*
-*/
-func (kademlia *Kademlia) sendFindData(contact *Contact, hash string) <-chan []byte]{
-	r := make(chan bool)
-	go func(){
-		defer close(r)
-		reply:=kademlia.network.SendFindDataMessage(contact.Address, hash)
-		r <- reply
-	}()
-	return r
-}
+
 /*
 	Requests the closest alpha-contacts from a given contact.
 	Returns a list of contacts.
@@ -313,11 +304,11 @@ func (kademlia *Kademlia) requestFromClosest(contact *Contact, target *Contact) 
 
 /*
 */
-func (kademlia *Kademlia) requestDataFromClosest(contact *Contact, target *KademliaID) <-chan []byte {
-	r := make(chan []Contact)
+func (kademlia *Kademlia) requestDataFromClosest(contact *Contact, target string) <-chan []byte {
+	r := make(chan []byte)
 	go func(){
 		defer close(r)
-		reply:=kademlia.network.SendFindDataMessage(contact,target)
+		reply:=kademlia.network.SendFindDataMessage(contact.Address,target)
 		r <- reply
 	}()
 	return r
