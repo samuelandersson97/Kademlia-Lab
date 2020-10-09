@@ -55,6 +55,7 @@ func (kademlia *Kademlia) LookupData(hash string) string {
 	if value != nil {
 		return string(value)
 	}else{
+		fmt.Println("####### I am searching for data in my network! ######")
 		// Search for the value in kademlia network
 		key := NewKademliaID(hash)
 		visitedList = append(visitedList, kademlia.network.routingTable.me)
@@ -62,6 +63,7 @@ func (kademlia *Kademlia) LookupData(hash string) string {
 		closestFromKey := closestContacts[0].ID.CalcDistance(key)
 		data := kademlia.SearchByKey(closestContacts,key,visitedList,closestFromKey,key)
 		if(data != nil){
+			fmt.Println("####### I found data "+string(data)+" in my network! ######")
 			return string(data)
 		}else{
 			return ""
