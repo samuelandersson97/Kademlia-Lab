@@ -63,7 +63,8 @@ func HandleInput(s []string,  kad *Kademlia) {
 	}else if operation == "put"{
 		kad.Store([]byte(s[1]))
 	}else if operation == "get"{
-		kad.LookupData(s[1])
+		s := kad.LookupData(s[1])
+		fmt.Println(s)
 	}else if operation == "show"{
 		for _, d := range kad.network.hashtable {
 			fmt.Println(string(d.Data))

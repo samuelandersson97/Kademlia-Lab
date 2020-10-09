@@ -170,8 +170,37 @@ func (network *Network) SendNodeJoinMessage(address string, me Contact) Contact 
 	
 }
 
-func (network *Network) SendFindDataMessage(address string, hash string) []byte{
-	// TODO
+func (network *Network) SendFindDataMessage(address string, key *KademliaID) []byte{
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",address+":1111")
+	if err != nil {
+		fmt.Println(err)
+	}
+	// Starts up a UDP-connection to the resolved UDP-address 
+	c, err := net.DialUDP("udp4",nil, udpEndPoint)
+	if err != nil {
+		fmt.Println(err)
+	}
+	dataToSend, _ := json.Marshal(key.String())
+	findDataMessage := CreateProtocol("NODE_VALUE", nil, "", dataToSend, "NODE_VALUE_SENT")
+	c.SetDeadline(time.Now().Add(T_OUT))
+	defer c.Close()
+	_, e := c.Write(findDataMessage)
+	if e != nil {
+		fmt.Println(err)
+	}
+	responseBuffer := make([]byte, 8192)
+	size, senderAddress, err := c.ReadFromUDP(responseBuffer)
+	findDataResponse := Protocol{}
+	if err != nil {
+		fmt.Println(err)
+	}
+	json.Unmarshal(responseBuffer[:size], &findDataResponse)
+	responseProtocol := network.DecodeRPC(&findDataResponse, senderAddress, c)
+	if(responseProtocol.Message=="NODE_VALUE_SUCCESS"){
+		return responseProtocol.Data
+	}else{
+		return nil
+	}
 	return nil
 }
 
@@ -186,10 +215,10 @@ func (network *Network) SendStoreMessage(address string, data *Data) bool{
 	if err != nil {
 		fmt.Println(err)
 	}
-	joinMessage := CreateProtocol("NODE_STORE", nil, "", dataToSend, "NODE_STORE_SENT")
+	storeMessage := CreateProtocol("NODE_STORE", nil, "", dataToSend, "NODE_STORE_SENT")
 	c.SetDeadline(time.Now().Add(T_OUT))
 	defer c.Close()
-	_, e := c.Write(joinMessage)
+	_, e := c.Write(storeMessage)
 	if e != nil {
 		fmt.Println(err)
 	}
@@ -216,12 +245,41 @@ func (network *Network) DecodeRPC(prot *Protocol, senderAddress *net.UDPAddr, co
 	}else if(prot.Rpc == "NODE_JOIN"){
 		return network.JoinHandler(prot, senderAddress, connection)
 	}else if(prot.Rpc == "NODE_VALUE"){
-		return nil
+		return network.FindDataHandler(prot, senderAddress, connection)
 	}else if(prot.Rpc == "NODE_STORE"){
 		return network.StoreHandler(prot, senderAddress, connection)
 	}else{
 		fmt.Println("ERROR. RPC TYPE COULD NOT BE FOUND")
 		return nil
+	}
+}
+func (network *Network) FindDataHandler(prot *Protocol, responseAddr *net.UDPAddr, connection *net.UDPConn) *Protocol{
+	if(prot.Message == "NODE_VALUE_SENT"){
+		key := ""
+		var response []byte
+		var protToSend []byte
+		json.Unmarshal(prot.Data[:len(prot.Data)], &key)
+		fmt.Println("Searching for data with key: "+ key)
+		for _, e := range network.hashtable {
+			if(e.Key.String() == key) {
+				fmt.Println("###### Data found: " + string(e.Data) + " ######")
+				response = e.Data
+				break
+			}
+		}
+
+		if(response != nil){
+			protToSend = CreateProtocol("NODE_VALUE", nil, "", response, "NODE_VALUE_SUCCESS")
+		}else{
+			protToSend = CreateProtocol("NODE_VALUE", nil, "", nil, "NODE_VALUE_REJECTED")
+		}
+		_, e := connection.WriteToUDP(protToSend, responseAddr)
+		if e != nil{
+			fmt.Println(e)
+		}
+		return prot
+	}else{
+		return prot
 	}
 }
 

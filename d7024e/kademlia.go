@@ -60,7 +60,7 @@ func (kademlia *Kademlia) LookupData(hash string) string {
 		visitedList = append(visitedList, kademlia.network.routingTable.me)
 		closestContacts := kademlia.network.routingTable.FindClosestContacts(key, alpha) // Get the alpha closest contaccts to our key from routing table
 		closestFromKey := closestContacts[0].ID.CalcDistance(key)
-		data := kademlia.SearchByKey(closestContacts,key,visitedList,closestFromKey,hash)
+		data := kademlia.SearchByKey(closestContacts,key,visitedList,closestFromKey,key)
 		if(data != nil){
 			return string(data)
 		}else{
@@ -210,7 +210,7 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 
 /*
 */
-func (kademlia *Kademlia) SearchByKey(contacts []Contact, target *KademliaID, visited []Contact, closestSoFar *KademliaID, hash string) []byte{
+func (kademlia *Kademlia) SearchByKey(contacts []Contact, target *KademliaID, visited []Contact, closestSoFar *KademliaID, key *KademliaID) []byte{
 	var returnContacts []Contact
 	var a []Contact
 	var data []byte
@@ -240,7 +240,7 @@ func (kademlia *Kademlia) SearchByKey(contacts []Contact, target *KademliaID, vi
 			a = <- kademlia.requestFromClosest(&srtContact[i], &targetContact)
 			visited = append(visited, srtContact[i])	//add the queried node's ip to the array of visited nodes ip's
 			returnContacts = append(returnContacts,a...)
-			data = <- kademlia.requestDataFromClosest(&srtContact[i], hash)
+			data = <- kademlia.requestDataFromClosest(&srtContact[i], key)
 			if(data != nil){
 				return data
 			}
@@ -262,10 +262,10 @@ func (kademlia *Kademlia) SearchByKey(contacts []Contact, target *KademliaID, vi
 		queriedClosest = sortedReturnContacts[0].ID.CalcDistance(target)
 		if(closestSoFar.Less(queriedClosest) && len(contacts) > 0){
 			//Made no progress in regards of distance this iteration
-			return kademlia.SearchByKey(sortedReturnContacts, target, visited, closestSoFar, hash)
+			return kademlia.SearchByKey(sortedReturnContacts, target, visited, closestSoFar, key)
 		}else{
 			//Made progress in regards of distance this iteration
-			return kademlia.SearchByKey(sortedReturnContacts, target, visited, queriedClosest, hash)
+			return kademlia.SearchByKey(sortedReturnContacts, target, visited, queriedClosest, key)
 		}
 	}else{
 		return nil
@@ -304,7 +304,7 @@ func (kademlia *Kademlia) requestFromClosest(contact *Contact, target *Contact) 
 
 /*
 */
-func (kademlia *Kademlia) requestDataFromClosest(contact *Contact, target string) <-chan []byte {
+func (kademlia *Kademlia) requestDataFromClosest(contact *Contact, target *KademliaID) <-chan []byte {
 	r := make(chan []byte)
 	go func(){
 		defer close(r)
