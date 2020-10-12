@@ -99,14 +99,9 @@ func (network *Network) SendPingMessage(contact *Contact) bool {
 }
 
 func (network *Network) SendFindContactMessage(contact *Contact, target *Contact) []Contact {
-	fmt.Println("IN sendfindcontactmessage: "+contact.String())
-	fmt.Println("IN sendfindcontactmessage: "+target.String())
-	fmt.Println("IN sendfindcontactmessage: "+network.routingTable.me.String())
 	byteArr := LookupDataToByteArray(target, network.routingTable.me)
 	lookupData := LookupData{}
 	json.Unmarshal(byteArr[:len(byteArr)], &lookupData)
-	fmt.Println(&lookupData.Sender)
-	fmt.Println(lookupData.Target)
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
 	if err != nil {
@@ -289,7 +284,6 @@ func (network *Network) StoreHandler(prot *Protocol, responseAddr *net.UDPAddr, 
 		var protToSend []byte
 		json.Unmarshal(prot.Data[:len(prot.Data)], &sentData)
 		success := network.AddToHashTable(&sentData)
-		fmt.Println(success)
 		if(success){
 			for _, d := range network.hashtable {
 				fmt.Println(string(d.Data))
@@ -313,16 +307,7 @@ func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 		sendContact := Contact{}
 		json.Unmarshal(prot.Data[:len(prot.Data)], &sendContact)
 		
-
 		fmt.Println(sendContact.ID)
-
-		//ONLY USED FOR TESTING. PRINTS THE CONTENT OF THE ROUTINGTABLE
-		for i := 0; i < 160 ; i++ {
-			if(network.routingTable.buckets[i].Len() > 0){
-				fmt.Println(network.routingTable.buckets[i].list.Front())
-			}
-			
-		}
 		
 		//Respond with my own contact
 		meContact := ContactToByteArray(&network.routingTable.me)
@@ -343,8 +328,6 @@ func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr,
 	if(prot.Message == "NODE_LOOKUP_SENT"){
 		lookupData := LookupData{}
 		json.Unmarshal(prot.Data[:len(prot.Data)], &lookupData)
-		fmt.Println(&lookupData.Sender)
-		fmt.Println(lookupData.Target)
 		closestContactsArray := network.routingTable.FindClosestContacts(lookupData.Target.ID, 3)
 		for _,c := range closestContactsArray{
 			fmt.Println("This contact was one of the closest: "+c.Address)
@@ -378,7 +361,6 @@ func (network *Network) PingHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 		network.AddContHelper(contactToAdd)
 		return prot
 	}else if(prot.Message == "PING_RESPONSE"){
-		fmt.Println(prot.Message)
 		return prot
 	}
 	return nil
@@ -403,14 +385,11 @@ func DataToByteArray(data *Data) []byte {
 }
 
 func LookupDataToByteArray(targetCont *Contact, senderCont Contact) []byte {
-	fmt.Println("LDTBA: "+targetCont.String())
-	fmt.Println("LDTBA: "+senderCont.String())
 	data := &LookupData{
 		Target: targetCont,
 		Sender: senderCont}
 	dataByteArray, err := json.Marshal(data)
 	if err != nil{
-		fmt.Println("AADGSDGDSGHDSHDSHDSHDSHSDHSDHSDHSDHSDHSDHSDHSDHDSHSDHSDHDSHSDHSDHDS")
 		return nil
 	}
 	return dataByteArray
