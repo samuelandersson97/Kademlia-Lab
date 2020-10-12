@@ -68,3 +68,13 @@ func (routingTable *RoutingTable) getBucketIndex(id *KademliaID) int {
 
 	return IDLength*8 - 1
 }
+
+func (routingTable *RoutingTable) CheckIfFull(id *KademliaID) bool {
+	index := routingTable.getBucketIndex(id)
+	size := routingTable.buckets[index].Len()
+	return bucketSize<=size
+}
+
+func (routingTable *RoutingTable) GetBucket(id *KademliaID) *bucket{
+	return routingTable.buckets[routingTable.getBucketIndex(id)]
+}
