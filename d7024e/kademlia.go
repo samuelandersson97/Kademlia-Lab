@@ -24,10 +24,6 @@ func (kademlia *Kademlia) LookupContact(target *Contact) []Contact{
 		ret := kademlia.PerformQuery(closestContacts, target, visitedList, closestFromMe, 0)
 		sortRet := kademlia.SortListBasedOnID(ret, target.ID)
 		sortRet = DeleteByAddress(kademlia.network.routingTable.me.Address, sortRet)
-		fmt.Println("################# Sorted returned list ####################")
-		for _, c := range sortRet{
-			fmt.Println(c.ID.String())
-		}
 		return sortRet
 	}
 	return nil
@@ -151,10 +147,6 @@ func (kademlia *Kademlia) PerformQuery(contacts []Contact, target *Contact, visi
 			contacts = DeleteByAddress(c.Address, contacts)	//WILL THIS BREAK? SINCE WE ARE LOOPING THROUGH THE SLICE ITSELF
 			return visited
 		}
-	}
-	//PRINT ONLY!!
-	for _, c := range contacts{
-		fmt.Println("CONTACT TO REQUEST FROM: "+c.Address)
 	}
 
 	srtContact := kademlia.SortListBasedOnID(contacts, target.ID)	//Needs to be sorted again after deletion. Stupid delete implementation.
