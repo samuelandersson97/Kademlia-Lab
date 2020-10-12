@@ -2,7 +2,6 @@ package d7024e
 
 import(
 	"net"
-	"strconv"
 	"fmt"
 	"time"
 	"encoding/json"
@@ -36,10 +35,9 @@ const T_OUT = time.Millisecond*1000.
 /*
 	Extract the sent message and create different fucntions that handles different types of messages (PING, FIND_NODE, etc...)
 */
-func (network *Network) Listen(ip string, port int) {
-	adrPort := ip+":"+strconv.Itoa(port)
+func (network *Network) Listen(ip string) {
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
-	udpEndPoint, err := net.ResolveUDPAddr("udp4",adrPort)
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",ip)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -65,7 +63,7 @@ func (network *Network) Listen(ip string, port int) {
 
 func (network *Network) SendPingMessage(contact *Contact) bool {
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
-	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -103,7 +101,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 	lookupData := LookupData{}
 	json.Unmarshal(byteArr[:len(byteArr)], &lookupData)
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
-	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address+":1111")
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -134,7 +132,7 @@ func (network *Network) SendFindContactMessage(contact *Contact, target *Contact
 
 func (network *Network) SendNodeJoinMessage(address string, me Contact) Contact {
 	joinData := ContactToByteArray(&me)
-	udpEndPoint, err := net.ResolveUDPAddr("udp4",address+":1111")
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",address)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -166,7 +164,7 @@ func (network *Network) SendNodeJoinMessage(address string, me Contact) Contact 
 }
 
 func (network *Network) SendFindDataMessage(address string, key *KademliaID) []byte{
-	udpEndPoint, err := net.ResolveUDPAddr("udp4",address+":1111")
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",address)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -201,7 +199,7 @@ func (network *Network) SendFindDataMessage(address string, key *KademliaID) []b
 
 func (network *Network) SendStoreMessage(address string, data *Data) bool{
 	dataToSend := DataToByteArray(data)
-	udpEndPoint, err := net.ResolveUDPAddr("udp4",address+":1111")
+	udpEndPoint, err := net.ResolveUDPAddr("udp4",address)
 	if err != nil {
 		fmt.Println(err)
 	}
