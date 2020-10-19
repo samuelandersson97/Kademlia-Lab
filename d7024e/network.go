@@ -64,6 +64,7 @@ func (network *Network) Listen(ip string) {
 func (network *Network) SendPingMessage(contact *Contact) bool {
 	//Returns an address of the UDP end point. 'udp4' indicates that only IPv4-addresses are being resolved
 	udpEndPoint, err := net.ResolveUDPAddr("udp4",contact.Address)
+	fmt.Println("Trying to ping: "+contact.Address)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -85,10 +86,12 @@ func (network *Network) SendPingMessage(contact *Contact) bool {
 	receivedPing := Protocol{}
 	if err != nil {
 		fmt.Println("TIMEOUT")
+		fmt.Println("Failed to ping: "+contact.Address)
 		return false
 	}else{
 		json.Unmarshal(responseBuffer[:size], &receivedPing)
 		_ = network.DecodeRPC(&receivedPing, senderAddress, c)
+		fmt.Println("Succesfully pinged: "+contact.Address)
 		return true
 	}
 
