@@ -197,7 +197,6 @@ func (network *Network) SendFindDataMessage(address string, key *KademliaID) []b
 	}else{
 		return nil
 	}
-	return nil
 }
 
 func (network *Network) SendStoreMessage(address string, data *Data) bool{
@@ -308,7 +307,7 @@ func (network *Network) JoinHandler(prot *Protocol, responseAddr *net.UDPAddr, c
 		sendContact := Contact{}
 		json.Unmarshal(prot.Data[:len(prot.Data)], &sendContact)
 		
-		fmt.Println(sendContact.ID)
+		fmt.Println("Node with id "+ sendContact.ID.String() +" joined this node.")
 		
 		//Respond with my own contact
 		meContact := ContactToByteArray(&network.routingTable.me)
@@ -330,9 +329,9 @@ func (network *Network) LookupHandler(prot *Protocol, responseAddr *net.UDPAddr,
 		lookupData := LookupData{}
 		json.Unmarshal(prot.Data[:len(prot.Data)], &lookupData)
 		closestContactsArray := network.routingTable.FindClosestContacts(lookupData.Target.ID, 3)
-		for _,c := range closestContactsArray{
+		/*for _,c := range closestContactsArray{
 			fmt.Println("This contact was one of the closest: "+c.Address)
-		}
+		}*/
 		lookupProtocolResponse := CreateProtocol("NODE_LOOKUP",closestContactsArray,"",prot.Data,"NODE_LOOKUP_RESPONSE")
 		_, e := connection.WriteToUDP(lookupProtocolResponse, responseAddr)
 		if e != nil{
