@@ -1,0 +1,8 @@
+#sudo docker swarm leave --force
+#sudo docker build . -t kadlab
+#sudo docker swarm init 
+#sudo docker stack deploy --compose-file docker-compose.yml kadlab
+sudo docker container rm $(sudo docker ps -a -q) -f 
+sudo docker network rm hening-6_kademlia_network
+sudo docker build . -t kadlab
+sudo COMPOSE_HTTP_TIMEOUT=200 docker-compose up -d --scale kademliaNodes=49
