@@ -23,7 +23,9 @@ gets the data from either itself of from any other node that has the data
 joins the node with that address
 
 > ping "address"
+
 pings the node with that address
 
 > show
+
 prints the content of the nodes hashtable
