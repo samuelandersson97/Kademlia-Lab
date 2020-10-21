@@ -197,6 +197,7 @@ func (network *Network) SendFindDataMessage(address string, key *KademliaID) []b
 	}else{
 		return nil
 	}
+	return nil
 }
 
 func (network *Network) SendStoreMessage(address string, data *Data) bool{

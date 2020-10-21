@@ -14,8 +14,22 @@ FROM golang:alpine
 
 #RUN go get github.com/samuelandersson97/Kademlia-Lab.git
 
+#WORKDIR /go/src/main
+#COPY Kademlia-Lab-master/main/main.go /go/src/main/
+#COPY Kademlia-Lab-master/d7024e/* /go/src/d7024e/
+#RUN go build main.go
+#CMD ./main
+
+
 WORKDIR /go/src/main
-COPY Kademlia-Lab-master/main/main.go /go/src/main/
-COPY Kademlia-Lab-master/d7024e/* /go/src/d7024e/
-RUN go build main.go
+COPY main/main.go /go/src/main/
+COPY d7024e/* /go/src/d7024e/
+CMD cd ..
+CMD cd d7024e 
+RUN go build 
+CMD cd ..
+CMD cd main
+RUN go build
+#RUN go test d7024e
 CMD ./main
+#EXPOSE 1111/udp

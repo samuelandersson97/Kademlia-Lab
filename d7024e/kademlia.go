@@ -99,7 +99,7 @@ func (kademlia *Kademlia) Store(dataWritten []byte) {
 	h := sha1.New()
 	h.Write(dataWritten)
 	hexEncodedContent := hex.EncodeToString(h.Sum(nil))
-	fmt.Println("Search key for the data: "+hexEncodedContent)
+	fmt.Println("This is the hash: "+hexEncodedContent)
 	keyToAdd := NewKademliaID(hexEncodedContent)
 	dataToAdd := &Data{
 		Data: dataWritten,

@@ -21,9 +21,9 @@ func main() {
 	network := d7024e.InitNetwork(rt)
 	kad := d7024e.InitKademlia(network)
 	go network.Listen(myIP)
-	/*if(!(myIP == "172.1.17.2:1111")){
+	if(!(myIP == "172.1.17.2:1111")){
 		kad.NodeJoin("172.1.17.2:1111")
-	}*/
+	}
 	for{
 		d7024e.ScanInput(kad)
 	}
