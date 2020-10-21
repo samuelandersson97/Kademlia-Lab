@@ -1,5 +1,7 @@
 # Kademlia-Lab
-Lab in D7024E
+Lab in D7024E.
+
+To start up and deploy the nodes, run the shellscript "startscript.sh".
 
 # Commands:
 
